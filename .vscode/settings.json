@@ -1,0 +1,10 @@
+{
+    "editor.codeActionsOnSave": {
+        "source.fixAll": true
+    },
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "[rust]": {
+        "editor.defaultFormatter": "matklad.rust-analyzer"
+    }
+}
