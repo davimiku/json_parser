@@ -3,7 +3,7 @@ use std::fmt;
 pub enum Value {
     Number(i64),
     String(String),
-    Boolean(bool),
+    Bool(bool),
     Array(Vec<Value>),
     Null,
 }
@@ -13,7 +13,7 @@ impl fmt::Display for Value {
         match self {
             Value::Number(n) => write!(f, "{}", n),
             Value::String(s) => write!(f, "{}", s),
-            Value::Boolean(b) => write!(f, "{}", b),
+            Value::Bool(b) => write!(f, "{}", b),
             Value::Array(v) => write!(f, "{:?}", v),
             Value::Null => f.write_str("null"),
         }
