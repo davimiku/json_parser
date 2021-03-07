@@ -2,22 +2,46 @@ use crate::location::Location;
 use crate::token::{Token, TokenKind};
 use std::string::String;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum LexErrorKind {
     CharNotRecognized(char),
     ParseNumberError,
     UnclosedQuotes,
     UnfinishedNullValue,
+    UnfinishedBoolValue(bool),
+    EmptyInput,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct LexError {
-    kind: LexErrorKind,
-    location: Location,
+    pub kind: LexErrorKind,
+    pub location: Location,
+}
+
+impl LexError {
+    pub fn empty() -> Self {
+        LexError {
+            kind: LexErrorKind::EmptyInput,
+            location: Location { row: 0, col: 0 },
+        }
+    }
+}
+
+pub type LexResult = Result<Token, LexError>;
+
+pub trait IteratorWithLocation: Iterator {
+    fn location(self) -> Location;
+}
+
+impl<I: Iterator> IteratorWithLocation for I {
+    fn location(self) -> Location {
+        todo!()
+    }
 }
 
 pub struct Lexer<I: Iterator<Item = char>> {
-    iter: I,
+    /// Iterator for chars from the input
+    char_iter: I,
 
     /// Current location of the cursor
     location: Location,
@@ -31,19 +55,18 @@ pub struct Lexer<I: Iterator<Item = char>> {
 
 impl<I: Iterator<Item = char>> Lexer<I> {
     /// Construct a new instance
-    pub fn new(char_iter: I) -> Self {
-        let mut lex = Lexer {
-            iter: char_iter,
+    pub fn new(mut char_iter: I) -> Self {
+        let next = char_iter.next();
+        Lexer {
+            char_iter,
             location: Location::new(),
             curr: None,
-            next: None,
-        };
-        lex.init();
-        lex
+            next,
+        }
     }
 
-    fn init(&mut self) {
-        self.next = self.iter.next();
+    pub fn location(&self) -> Location {
+        self.location
     }
 
     /// Grabs the next character from the iterator and
@@ -59,7 +82,7 @@ impl<I: Iterator<Item = char>> Lexer<I> {
             None => {}
         }
         self.curr = self.next.take();
-        self.next = self.iter.next();
+        self.next = self.char_iter.next();
         self.curr
     }
 
@@ -87,16 +110,21 @@ impl<I: Iterator<Item = char>> Lexer<I> {
         Ok(str)
     }
 
-    /// Lexes the literal characters `null`
-    fn lex_null(&mut self) -> Result<TokenKind, LexErrorKind> {
-        let null_iter = "null".chars();
-        for null_char in null_iter {
-            if self.curr.is_none() || self.curr.unwrap() != null_char {
-                return Err(LexErrorKind::UnfinishedNullValue);
+    fn lex_literal(
+        &mut self,
+        expected: &str,
+        ok_kind: TokenKind,
+        error_kind: LexErrorKind,
+    ) -> Result<TokenKind, LexErrorKind> {
+        let mut expected_iter = expected.chars();
+        expected_iter.next();
+        for expected_char in expected_iter {
+            if self.next.is_none() || self.next.unwrap() != expected_char {
+                return Err(error_kind);
             }
             self.advance();
         }
-        Ok(TokenKind::Null)
+        Ok(ok_kind)
     }
 
     /// Lexes a number
@@ -123,8 +151,7 @@ impl<I: Iterator<Item = char>> Lexer<I> {
 }
 
 impl<I: Iterator<Item = char>> Iterator for Lexer<I> {
-    type Item = Result<Token, LexError>;
-
+    type Item = LexResult;
     /// Returns the next item from the lexer, or
     /// None if the input string is finished.
     ///
@@ -144,18 +171,25 @@ impl<I: Iterator<Item = char>> Iterator for Lexer<I> {
         let result = match ch {
             '[' => Ok(TokenKind::LeftBracket),
             ']' => Ok(TokenKind::RightBracket),
-            '{' => Ok(TokenKind::LeftCurly),
-            '}' => Ok(TokenKind::RightCurly),
+            '{' => Ok(TokenKind::LeftBrace),
+            '}' => Ok(TokenKind::RightBrace),
             ',' => Ok(TokenKind::Comma),
             ':' => Ok(TokenKind::Colon),
             '"' => match self.lex_string() {
-                Ok(str) => Ok(TokenKind::Str(str)),
+                Ok(str) => Ok(TokenKind::String(str)),
                 Err(err) => Err(err),
             },
-            'n' => match self.lex_null() {
-                Ok(t) => Ok(t),
-                Err(err) => Err(err),
-            },
+            'n' => self.lex_literal("null", TokenKind::Null, LexErrorKind::UnfinishedNullValue),
+            't' => self.lex_literal(
+                "true",
+                TokenKind::Bool(true),
+                LexErrorKind::UnfinishedBoolValue(true),
+            ),
+            'f' => self.lex_literal(
+                "false",
+                TokenKind::Bool(false),
+                LexErrorKind::UnfinishedBoolValue(false),
+            ),
             c if c.is_digit(10) => match self.lex_number() {
                 Ok(i) => Ok(TokenKind::Number(i)),
                 Err(err) => Err(err),
@@ -187,71 +221,66 @@ mod tests {
 
     #[test]
     fn punctuation() {
-        let input = "[]{},:";
+        let actual = lex("[]{},:");
         let expected: Vec<TokenKind> = vec![
             TokenKind::LeftBracket,
             TokenKind::RightBracket,
-            TokenKind::LeftCurly,
-            TokenKind::RightCurly,
+            TokenKind::LeftBrace,
+            TokenKind::RightBrace,
             TokenKind::Comma,
             TokenKind::Colon,
         ];
-        let actual = lex(input);
 
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn key() {
-        let input = "\"key\"";
-        let expected: Vec<TokenKind> = vec![TokenKind::Str("key".to_string())];
-        let actual = lex(input);
+        let actual = lex("\"key\"");
+        let expected: Vec<TokenKind> = vec![TokenKind::String("key".to_string())];
 
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn key_colon() {
-        let input = "\"key\":";
-        let expected: Vec<TokenKind> = vec![TokenKind::Str("key".to_string()), TokenKind::Colon];
-        let actual = lex(input);
+        let actual = lex("\"key\":");
+        let expected: Vec<TokenKind> = vec![TokenKind::String("key".to_string()), TokenKind::Colon];
 
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn simple_object() {
-        let input = "{\"key\":\"value\"}";
+        let actual = lex("{\"key\":\"value\"}");
         let expected: Vec<TokenKind> = vec![
-            TokenKind::LeftCurly,
-            TokenKind::Str("key".to_string()),
+            TokenKind::LeftBrace,
+            TokenKind::String("key".to_string()),
             TokenKind::Colon,
-            TokenKind::Str("value".to_string()),
-            TokenKind::RightCurly,
+            TokenKind::String("value".to_string()),
+            TokenKind::RightBrace,
         ];
-        let actual = lex(input);
 
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn array_with_strings() {
-        let input = "[\"A\", \"B\"]";
+        let actual = lex("[\"A\", \"B\"]");
         let expected: Vec<TokenKind> = vec![
             TokenKind::LeftBracket,
-            TokenKind::Str("A".to_string()),
+            TokenKind::String("A".to_string()),
             TokenKind::Comma,
-            TokenKind::Str("B".to_string()),
+            TokenKind::String("B".to_string()),
             TokenKind::RightBracket,
         ];
-        let actual = lex(input);
 
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn array_with_numbers() {
-        let input = "[1, 2]";
+        let actual = lex("[1, 2]");
         let expected: Vec<TokenKind> = vec![
             TokenKind::LeftBracket,
             TokenKind::Number(1),
@@ -259,26 +288,99 @@ mod tests {
             TokenKind::Number(2),
             TokenKind::RightBracket,
         ];
-        let actual = lex(input);
 
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn just_null() {
-        let input = "null";
+        let actual = lex("null");
         let expected: Vec<TokenKind> = vec![TokenKind::Null];
-        let actual = lex(input);
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn just_true() {
+        let actual = lex("true");
+        let expected: Vec<TokenKind> = vec![TokenKind::Bool(true)];
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn just_false() {
+        let actual = lex("false");
+        let expected: Vec<TokenKind> = vec![TokenKind::Bool(false)];
 
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn simple_int() {
-        let input = "123";
+        let actual = lex("123");
         let expected: Vec<TokenKind> = vec![TokenKind::Number(123)];
-        let actual = lex(input);
 
         assert_eq!(actual, expected);
     }
+
+    #[test]
+    fn array_with_null() {
+        let actual = lex("[null]");
+        let expected: Vec<TokenKind> = vec![
+            TokenKind::LeftBracket,
+            TokenKind::Null,
+            TokenKind::RightBracket,
+        ];
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn array_with_true_false() {
+        let actual = lex("[true, false]");
+        let expected: Vec<TokenKind> = vec![
+            TokenKind::LeftBracket,
+            TokenKind::Bool(true),
+            TokenKind::Comma,
+            TokenKind::Bool(false),
+            TokenKind::RightBracket,
+        ];
+        assert_eq!(actual, expected);
+    }
 }
+
+// /// LexerBuffer is a wrapper around the Lexer to make
+// /// it more convenient to consume Tokens
+// pub struct LexerBuffer<T, I: Iterator<Item = T>> {
+//     iter: I,
+//     curr: Option<T>,
+//     next: Option<T>,
+// }
+
+// impl<T, I: Iterator<Item = T>> LexerBuffer<T, I> {
+//     /// Create a new LexerBuffer
+//     pub fn new(mut iter: I) -> Self {
+//         let curr = iter.next();
+//         let next = iter.next();
+//         LexerBuffer { iter, curr, next }
+//     }
+
+//     /// Provides a reference to the current Token
+//     pub fn curr(&self) -> &T {
+//         self.curr.as_ref().unwrap_or(Token {
+//             kind: TokenKind::EOF,
+//             location: Location { row: 0, col: 0 },
+//         })
+//     }
+
+//     /// Advances the Token iterator
+//     pub fn advance_token(&mut self) {
+//         self.curr = self.next.take();
+//         self.next = self.iter.next();
+//     }
+
+//     /// Provides a borrow of the Token iterator
+//     pub fn iter(&mut self) -> &I {
+//         &self.iter
+//     }
+// }
