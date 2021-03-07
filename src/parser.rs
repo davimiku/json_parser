@@ -5,12 +5,6 @@ use crate::{
     value::Value,
 };
 
-enum ParserState {
-    Initial,
-    ParsingArray,
-    ParsingObject,
-}
-
 macro_rules! check_comma {
     ($needs_comma:expr,$value:expr,$token:expr) => {
         match $needs_comma {
@@ -40,18 +34,11 @@ pub type ParseResult = Result<Value, ParseError>;
 pub struct Parser<I: Iterator<Item = LexResult>> {
     /// Iterator that returns LexResult
     lexer: I,
-
-    /// Finite state of the parser
-    state: ParserState,
 }
 
 impl<I: Iterator<Item = LexResult>> Parser<I> {
     pub fn new(lexer: I) -> Self {
-        Parser {
-            lexer,
-            // phantom: PhantomData {},
-            state: ParserState::Initial,
-        }
+        Parser { lexer }
     }
 
     pub fn parse(&mut self) -> ParseResult {
@@ -75,7 +62,7 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
         }
     }
 
-    pub fn parse_array(&mut self) -> ParseResult {
+    fn parse_array(&mut self) -> ParseResult {
         let mut array: Vec<Value> = Vec::new();
         let mut needs_comma = false;
         loop {
@@ -122,7 +109,7 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
         Ok(Value::Array(array))
     }
 
-    pub fn parse_object(&mut self) -> ParseResult {
+    fn parse_object(&mut self) -> ParseResult {
         Err(ParseError::empty())
     }
 }
@@ -159,10 +146,7 @@ pub enum ParseErrorKind {
     // EOF too soon
     EarlyEOF,
     UnclosedBracket,
-    UnclosedBrace,
-
-    // Needed EOF
-    ExpectedEOF,
+    // UnclosedBrace,
 
     // Missing Characters
     NeedsComma,
