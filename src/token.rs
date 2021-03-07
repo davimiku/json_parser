@@ -1,21 +1,20 @@
 use std::fmt::{self, Write};
-use TokenKind::*;
 
 use crate::location::Location;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TokenKind {
-    /// Key of the key/value pair or string value
-    Str(String),
-
     /// Literals
     Number(i64),
     Null,
     Bool(bool),
 
+    /// Key of the key/value pair or string value
+    String(String),
+
     /// Punctuation
-    LeftCurly,
-    RightCurly,
+    LeftBrace,
+    RightBrace,
     LeftBracket,
     RightBracket,
     Comma,
@@ -27,17 +26,17 @@ pub enum TokenKind {
 impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            LeftBracket => f.write_char('['),
-            RightBracket => f.write_char(']'),
-            LeftCurly => f.write_char('{'),
-            RightCurly => f.write_char('}'),
-            Comma => f.write_char(','),
-            Colon => f.write_char(':'),
-            Str(val) => write!(f, "{:?}", val),
-            Number(val) => write!(f, "{:?}", val),
-            Bool(val) => write!(f, "{:?}", val),
-            Null => f.write_str("null"),
-            EOF => f.write_str("END_OF_FILE"),
+            TokenKind::LeftBracket => f.write_char('['),
+            TokenKind::RightBracket => f.write_char(']'),
+            TokenKind::LeftBrace => f.write_char('{'),
+            TokenKind::RightBrace => f.write_char('}'),
+            TokenKind::Comma => f.write_char(','),
+            TokenKind::Colon => f.write_char(':'),
+            TokenKind::String(val) => write!(f, "{:?}", val),
+            TokenKind::Number(val) => write!(f, "{:?}", val),
+            TokenKind::Bool(val) => write!(f, "{:?}", val),
+            TokenKind::Null => f.write_str("null"),
+            TokenKind::EOF => f.write_str("END_OF_FILE"),
         }
     }
 }
@@ -46,4 +45,13 @@ impl fmt::Display for TokenKind {
 pub struct Token {
     pub kind: TokenKind,
     pub location: Location,
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_fmt(format_args!(
+            "token '{}' at row {}, col {}",
+            self.kind, self.location.row, self.location.col,
+        ))
+    }
 }
