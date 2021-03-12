@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     lexer::{LexError, LexErrorKind, LexResult},
     location::Location,
@@ -42,23 +44,16 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
     }
 
     pub fn parse(&mut self) -> ParseResult {
-        let token = self
-            .lexer
-            .next()
-            .unwrap_or(Err(LexError::empty()))
-            .map_err(|err| ParseError::from_lex_error(&err))?;
+        let token = self.advance()?;
         match token.kind {
             TokenKind::Null => Ok(Value::Null),
             TokenKind::String(s) => Ok(Value::String(s)),
             TokenKind::Number(n) => Ok(Value::Number(n)),
             TokenKind::Bool(b) => Ok(Value::Bool(b)),
             TokenKind::LeftBrace => self.parse_object(),
-            TokenKind::RightBrace => make_error!(ParseErrorKind::UnexpectedRightBrace, token),
             TokenKind::LeftBracket => self.parse_array(),
-            TokenKind::RightBracket => make_error!(ParseErrorKind::UnexpectedRightBracket, token),
-            TokenKind::Comma => make_error!(ParseErrorKind::UnexpectedComma, token),
-            TokenKind::Colon => make_error!(ParseErrorKind::UnexpectedColon, token),
             TokenKind::EOF => make_error!(ParseErrorKind::EarlyEOF, token),
+            _ => make_error!(ParseErrorKind::ExpectedValue, token),
         }
     }
 
@@ -66,16 +61,7 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
         let mut array: Vec<Value> = Vec::new();
         let mut needs_comma = false;
         loop {
-            let token = self
-                .lexer
-                .next()
-                .unwrap_or(Ok(Token {
-                    kind: TokenKind::EOF,
-                    location: Location { row: 0, col: 0 },
-                }))
-                .map_err(|err| ParseError::from_lex_error(&err))?;
-            //self.advance();
-            //let token = self.lexer.curr().unwrap_or(default);
+            let token = self.advance()?;
             let result: ParseResult = match &token.kind {
                 TokenKind::String(s) => {
                     check_comma!(needs_comma, Value::String(s.to_string()), token)
@@ -92,14 +78,13 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
                         continue;
                     } else {
                         Err(ParseError {
-                            kind: ParseErrorKind::UnexpectedComma,
+                            kind: ParseErrorKind::TrailingComma,
                             location: token.location,
                         })
                     }
                 }
-                TokenKind::RightBrace => make_error!(ParseErrorKind::UnexpectedRightBrace, token),
-                TokenKind::Colon => make_error!(ParseErrorKind::UnexpectedColon, token),
                 TokenKind::EOF => make_error!(ParseErrorKind::UnclosedBracket, token),
+                _ => make_error!(ParseErrorKind::ExpectedValue, token),
             };
             match result {
                 Ok(value) => array.push(value),
@@ -110,7 +95,63 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
     }
 
     fn parse_object(&mut self) -> ParseResult {
-        Err(ParseError::empty())
+        let mut hashmap: HashMap<String, Value> = HashMap::new();
+        loop {
+            let token = self.advance()?;
+            match &token.kind {
+                TokenKind::String(key) => {
+                    let token = self.advance()?;
+                    match &token.kind {
+                        TokenKind::Colon => {
+                            let value = self.parse()?;
+                            hashmap.insert(key.to_string(), value);
+                        }
+                        _ => {
+                            return Err(ParseError {
+                                kind: ParseErrorKind::ExpectedColon,
+                                location: token.location,
+                            })
+                        }
+                    }
+                    let next = self.advance()?;
+                    match &next.kind {
+                        TokenKind::Comma => {}
+                        TokenKind::RightBrace => break, // object parsing ended
+                        _ => {
+                            return Err(ParseError {
+                                kind: ParseErrorKind::ExpectedComma,
+                                location: token.location,
+                            })
+                        }
+                    }
+                }
+                TokenKind::EOF => {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::UnclosedBrace,
+                        location: token.location,
+                    })
+                }
+                _ => {
+                    return Err(ParseError {
+                        kind: ParseErrorKind::ExpectedProperty,
+                        location: token.location,
+                    })
+                }
+            };
+        }
+        Ok(Value::Object(hashmap))
+    }
+
+    /// Advance the lexer and provide the next token
+    /// or a parsing error
+    fn advance(&mut self) -> Result<Token, ParseError> {
+        self.lexer
+            .next()
+            .unwrap_or(Ok(Token {
+                kind: TokenKind::EOF,
+                location: Location { row: 0, col: 0 },
+            }))
+            .map_err(|err| ParseError::from_lex_error(&err))
     }
 }
 
@@ -121,13 +162,6 @@ pub struct ParseError {
 }
 
 impl ParseError {
-    pub fn empty() -> Self {
-        ParseError {
-            kind: ParseErrorKind::Empty,
-            location: Location { row: 0, col: 0 },
-        }
-    }
-
     pub fn from_lex_error(lex_err: &LexError) -> Self {
         ParseError {
             kind: ParseErrorKind::LexError(lex_err.kind),
@@ -140,28 +174,40 @@ impl ParseError {
 pub enum ParseErrorKind {
     LexError(LexErrorKind),
 
-    // Empty
-    Empty,
-
     // EOF too soon
     EarlyEOF,
     UnclosedBracket,
-    // UnclosedBrace,
+    UnclosedBrace,
+
+    // Expected
+    ExpectedColon,
+    ExpectedComma,
+    ExpectedValue, // Expected JSON object, array, or literal
+    ExpectedProperty,
 
     // Missing Characters
     NeedsComma,
 
     // Unexpected Characters
-    UnexpectedColon,
-    UnexpectedComma,
-    UnexpectedRightBrace,
-    UnexpectedRightBracket,
+    TrailingComma,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::lexer::Lexer;
+
+    macro_rules! map(
+        { $($key:expr => $value:expr),+ } => {
+            {
+                let mut m = HashMap::new();
+                $(
+                    m.insert($key, $value);
+                )+
+                m
+            }
+        };
+    );
 
     fn parse(input: &str) -> ParseResult {
         let mut parser = Parser::new(Lexer::new(input.chars()));
@@ -214,5 +260,100 @@ mod tests {
             value.unwrap(),
             Value::Array(vec![Value::Number(1), Value::Number(2), Value::Number(3)])
         )
+    }
+
+    #[test]
+    fn array_with_object() {
+        let value = parse("[{\"key\": null}]");
+        assert!(value.is_ok());
+        assert_eq!(
+            value.unwrap(),
+            Value::Array(vec![Value::Object(
+                map! { "key".to_string() => Value::Null }
+            )])
+        )
+    }
+
+    #[test]
+    fn object_with_int() {
+        let value = parse("{\"key\": 1}");
+        assert!(value.is_ok());
+        assert_eq!(
+            value.unwrap(),
+            Value::Object(map! { "key".to_string() => Value::Number(1) })
+        )
+    }
+
+    #[test]
+    fn object_with_string() {
+        let value = parse("{\"key\": \"value\"}");
+        assert!(value.is_ok());
+        assert_eq!(
+            value.unwrap(),
+            Value::Object(map! { "key".to_string() => Value::String("value".to_string()) })
+        )
+    }
+
+    #[test]
+    fn object_with_null() {
+        let value = parse("{\"key\": null}");
+        assert!(value.is_ok());
+        assert_eq!(
+            value.unwrap(),
+            Value::Object(map! { "key".to_string() => Value::Null })
+        )
+    }
+
+    #[test]
+    fn object_with_true() {
+        let value = parse("{\"key\": true}");
+        assert!(value.is_ok());
+        assert_eq!(
+            value.unwrap(),
+            Value::Object(map! { "key".to_string() => Value::Bool(true) })
+        )
+    }
+
+    #[test]
+    fn object_with_false() {
+        let value = parse("{\"key\": false}");
+        assert!(value.is_ok());
+        assert_eq!(
+            value.unwrap(),
+            Value::Object(map! { "key".to_string() => Value::Bool(false) })
+        )
+    }
+
+    #[test]
+    fn nested_object() {
+        let value = parse("{\"key\": { \"innerkey\": null } }");
+        assert!(value.is_ok());
+        assert_eq!(
+            value.unwrap(),
+            Value::Object(
+                map! { "key".to_string() => Value::Object(map! { "innerkey".to_string() => Value::Null})}
+            )
+        )
+    }
+
+    #[test]
+    fn err_unclosed_array() {
+        let err = parse("[null");
+        assert!(err.is_err());
+        assert_eq!(err.unwrap_err().kind, ParseErrorKind::UnclosedBracket)
+    }
+
+    #[test]
+    fn err_unclosed_object() {
+        let err = parse("{\"key\":");
+        assert!(err.is_err());
+        assert_eq!(err.unwrap_err().kind, ParseErrorKind::UnclosedBracket)
+    }
+
+    #[test]
+    fn err_expected_value() {
+        let err = parse("]");
+        assert!(err.is_err());
+        assert_eq!(err.unwrap_err().kind, ParseErrorKind::ExpectedValue)
     }
 }
