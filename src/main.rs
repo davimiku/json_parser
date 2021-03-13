@@ -1,16 +1,7 @@
-use lexer::Lexer;
-use parser::Parser;
-
-mod cursor;
-mod lexer;
-mod location;
-mod parser;
-mod token;
-mod value;
-// use std::iter::Map;
+use json_parser_lib::{lexer::Lexer, parser::Parser};
 
 fn main() {
-    let input = "[null, true, false, 1, \"hello\"]";
+    let input = "{\"array\": [null, true, false], \"hello\": \"world\"}";
     let lexer = Lexer::new(input.chars());
     let mut parser = Parser::new(lexer);
     let result = parser.parse();
@@ -18,9 +9,4 @@ fn main() {
         Ok(value) => println!("{}", value),
         Err(err) => println!("{:?}", err),
     }
-}
-
-#[test]
-fn test() {
-    assert!(true);
 }
