@@ -1,9 +1,16 @@
 [package]
-name = "json-parser"
+name = "json_parser"
 version = "0.1.0"
 authors = ["David Mikulis <davidmikulis@gmail.com>"]
 edition = "2018"
 
+[lib]
+name = "json_parser_lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "json_parser_bin"
+path = "src/main.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
