@@ -7,6 +7,10 @@ use crate::{
     value::Value,
 };
 
+// This throws an unused_imports warning but is necessary
+#[allow(unused_imports)]
+use crate::json_object;
+
 macro_rules! check_comma {
     ($needs_comma:expr,$value:expr,$token:expr) => {
         match $needs_comma {
@@ -203,18 +207,6 @@ mod tests {
     use super::*;
     use crate::lexer::Lexer;
 
-    macro_rules! map(
-        { $($key:expr => $value:expr),+ } => {
-            {
-                let mut m = BTreeMap::new();
-                $(
-                    m.insert($key, $value);
-                )+
-                m
-            }
-        };
-    );
-
     fn parse(input: &str) -> ParseResult {
         let mut parser = Parser::new(Lexer::new(input.chars()));
         parser.parse()
@@ -275,7 +267,7 @@ mod tests {
         assert_eq!(
             value.unwrap(),
             Value::Array(vec![Value::Object(
-                map! { "key".to_string() => Value::Null }
+                json_object! { "key".to_string() => Value::Null }
             )])
         )
     }
@@ -286,7 +278,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(map! { "key".to_string() => Value::Number(1) })
+            Value::Object(json_object! { "key".to_string() => Value::Number(1) })
         )
     }
 
@@ -296,7 +288,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(map! { "key".to_string() => Value::String("value".to_string()) })
+            Value::Object(json_object! { "key".to_string() => Value::String("value".to_string()) })
         )
     }
 
@@ -306,7 +298,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(map! { "key".to_string() => Value::Null })
+            Value::Object(json_object! { "key".to_string() => Value::Null })
         )
     }
 
@@ -316,7 +308,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(map! { "key".to_string() => Value::Bool(true) })
+            Value::Object(json_object! { "key".to_string() => Value::Bool(true) })
         )
     }
 
@@ -326,7 +318,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(map! { "key".to_string() => Value::Bool(false) })
+            Value::Object(json_object! { "key".to_string() => Value::Bool(false) })
         )
     }
 
@@ -337,7 +329,7 @@ mod tests {
         assert_eq!(
             value.unwrap(),
             Value::Object(
-                map! { "key".to_string() => Value::Object(map! { "innerkey".to_string() => Value::Null})}
+                json_object! { "key".to_string() => Value::Object(json_object! { "innerkey".to_string() => Value::Null})}
             )
         )
     }
