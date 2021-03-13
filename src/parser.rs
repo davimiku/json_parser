@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::{
     lexer::{LexError, LexErrorKind, LexResult},
@@ -95,7 +95,7 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
     }
 
     fn parse_object(&mut self) -> ParseResult {
-        let mut hashmap: HashMap<String, Value> = HashMap::new();
+        let mut map: BTreeMap<String, Value> = BTreeMap::new();
         loop {
             let token = self.advance()?;
             match &token.kind {
@@ -104,7 +104,7 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
                     match &token.kind {
                         TokenKind::Colon => {
                             let value = self.parse()?;
-                            hashmap.insert(key.to_string(), value);
+                            map.insert(key.to_string(), value);
                         }
                         _ => {
                             return Err(ParseError {
@@ -117,6 +117,12 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
                     match &next.kind {
                         TokenKind::Comma => {}
                         TokenKind::RightBrace => break, // object parsing ended
+                        TokenKind::EOF => {
+                            return Err(ParseError {
+                                kind: ParseErrorKind::UnclosedBrace,
+                                location: token.location,
+                            })
+                        }
                         _ => {
                             return Err(ParseError {
                                 kind: ParseErrorKind::ExpectedComma,
@@ -139,7 +145,7 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
                 }
             };
         }
-        Ok(Value::Object(hashmap))
+        Ok(Value::Object(map))
     }
 
     /// Advance the lexer and provide the next token
@@ -200,7 +206,7 @@ mod tests {
     macro_rules! map(
         { $($key:expr => $value:expr),+ } => {
             {
-                let mut m = HashMap::new();
+                let mut m = BTreeMap::new();
                 $(
                     m.insert($key, $value);
                 )+
@@ -345,9 +351,9 @@ mod tests {
 
     #[test]
     fn err_unclosed_object() {
-        let err = parse("{\"key\":");
+        let err = parse("{\"key\":\"value\"");
         assert!(err.is_err());
-        assert_eq!(err.unwrap_err().kind, ParseErrorKind::UnclosedBracket)
+        assert_eq!(err.unwrap_err().kind, ParseErrorKind::UnclosedBrace)
     }
 
     #[test]
