@@ -279,6 +279,18 @@ mod tests {
     }
 
     #[test]
+    fn empty_string() {
+        let actual = lex("[\"\"]");
+        let expected: Vec<TokenKind> = vec![
+            TokenKind::LeftBracket,
+            TokenKind::String("".to_string()),
+            TokenKind::RightBracket,
+        ];
+
+        assert_eq!(actual, expected)
+    }
+
+    #[test]
     fn array_with_numbers() {
         let actual = lex("[1, 2]");
         let expected: Vec<TokenKind> = vec![
