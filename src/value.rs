@@ -119,6 +119,9 @@ impl fmt::Display for Value {
                     } else {
                         output.push_str(&format!("{}", item.1));
                     }
+                    if iter.peek().is_some() {
+                        output.push_str(", ");
+                    }
                 }
                 output.push('}');
                 write!(f, "{}", output)
