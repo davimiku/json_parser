@@ -1,5 +1,5 @@
+use super::token::{Token, TokenKind};
 use crate::location::Location;
-use crate::token::{Token, TokenKind};
 use std::string::String;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -9,22 +9,12 @@ pub enum LexErrorKind {
     UnclosedQuotes,
     UnfinishedNullValue,
     UnfinishedBoolValue(bool),
-    EmptyInput,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct LexError {
     pub kind: LexErrorKind,
     pub location: Location,
-}
-
-impl LexError {
-    pub fn empty() -> Self {
-        LexError {
-            kind: LexErrorKind::EmptyInput,
-            location: Location { row: 0, col: 0 },
-        }
-    }
 }
 
 pub type LexResult = Result<Token, LexError>;
@@ -209,7 +199,6 @@ impl<I: Iterator<Item = char>> Iterator for Lexer<I> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::token::TokenKind;
 
     fn lex(input: &str) -> Vec<TokenKind> {
         Lexer::new(input.chars())
