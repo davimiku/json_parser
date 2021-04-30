@@ -1,15 +1,10 @@
 use std::collections::BTreeMap;
 
-use crate::{
-    lexer::{LexError, LexErrorKind, LexResult},
-    location::Location,
-    token::{Token, TokenKind},
-    value::Value,
-};
-
-// This throws an unused_imports warning but is necessary
-#[allow(unused_imports)]
-use crate::json_object;
+use crate::{location::Location, value::Value};
+mod lexer;
+mod token;
+use lexer::{LexError, LexErrorKind, LexResult, Lexer};
+use token::{Token, TokenKind};
 
 macro_rules! check_comma {
     ($needs_comma:expr,$value:expr,$token:expr) => {
@@ -35,9 +30,7 @@ macro_rules! make_error {
     };
 }
 
-pub type ParseResult = Result<Value, ParseError>;
-
-pub struct Parser<I: Iterator<Item = LexResult>> {
+struct Parser<I: Iterator<Item = LexResult>> {
     /// Iterator that returns LexResult
     lexer: I,
 }
@@ -172,7 +165,7 @@ pub struct ParseError {
 }
 
 impl ParseError {
-    pub fn from_lex_error(lex_err: &LexError) -> Self {
+    fn from_lex_error(lex_err: &LexError) -> Self {
         ParseError {
             kind: ParseErrorKind::LexError(lex_err.kind),
             location: lex_err.location,
@@ -181,7 +174,7 @@ impl ParseError {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum ParseErrorKind {
+pub(crate) enum ParseErrorKind {
     LexError(LexErrorKind),
 
     // EOF too soon
@@ -202,15 +195,17 @@ pub enum ParseErrorKind {
     TrailingComma,
 }
 
+pub type ParseResult = Result<Value, ParseError>;
+
+pub fn parse(input: &str) -> ParseResult {
+    let mut parser = Parser::new(Lexer::new(input.chars()));
+    parser.parse()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lexer::Lexer;
-
-    fn parse(input: &str) -> ParseResult {
-        let mut parser = Parser::new(Lexer::new(input.chars()));
-        parser.parse()
-    }
+    use crate::json_object;
 
     #[test]
     fn just_null() {
