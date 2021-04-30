@@ -13,6 +13,15 @@ macro_rules! json_object(
     };
 );
 
+/// Representation of a JSON value
+///
+/// Valid JSON values include:
+/// - Number
+/// - String
+/// - Boolean
+/// - Array
+/// - Object
+/// - Null
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     Number(i64),
