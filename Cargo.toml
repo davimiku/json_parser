@@ -8,9 +8,6 @@ edition = "2018"
 name = "json_parser_lib"
 path = "src/lib.rs"
 
-[[bin]]
-name = "json_parser_bin"
-path = "src/main.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
