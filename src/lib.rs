@@ -35,7 +35,7 @@ mod tests {
                 "arr_val": [
                     "one",
                     2,
-                    false,
+                    false
                 ],
                 "obj_val": {
                     "nested_key": "nested_value"
@@ -55,8 +55,7 @@ mod tests {
             ))
         ));
 
-        let actual = combinator_parse(input);
-        assert!(actual.is_ok());
-        assert_eq!(expected, actual.unwrap());
+        let actual = combinator_parse(input).unwrap();
+        assert_eq!(expected, actual);
     }
 }
