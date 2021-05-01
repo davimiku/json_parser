@@ -100,3 +100,112 @@ where
 pub fn parse<'a>(input: &str) -> Result<Value, &str> {
     json_value().parse(input).map(|(_, value)| value)
 }
+
+/// Integration tests across the combinator parser
+#[cfg(test)]
+mod tests {
+    use crate::json_object;
+    use std::collections::BTreeMap;
+
+    use super::*;
+
+    #[test]
+    fn empty_object() {
+        let input = "{}";
+        let expected = Value::Object(BTreeMap::new());
+        let actual = parse(input).unwrap();
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn simple_object() {
+        let input = r#"{
+            "a": "value",
+            "b": true
+        }"#;
+        let expected = Value::Object(
+            json_object! { "a".to_string() => Value::String("value".to_string()), "b".to_string() => Value::Bool(true) },
+        );
+        let actual = parse(input).unwrap();
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn empty_array() {
+        let input = "[]";
+        let expected = Value::Array(vec![]);
+        let actual = parse(input).unwrap();
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn simple_array() {
+        let input = r#"[
+            "value",
+            true,
+            false,
+            null
+        ]"#;
+        let expected = Value::Array(vec![
+            Value::String("value".to_string()),
+            Value::Bool(true),
+            Value::Bool(false),
+            Value::Null,
+        ]);
+        let actual = parse(input).unwrap();
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn inner_object() {
+        let input = r#"
+        {
+            "obj": {}
+        }"#;
+        let expected =
+            Value::Object(json_object! { "obj".to_string() => Value::Object(BTreeMap::new()) });
+        let actual = parse(input).unwrap();
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn inner_array() {
+        let input = r#"
+        {
+            "arr": [
+                "one",
+                2,
+                false
+            ]
+        }"#;
+        let expected = Value::Object(json_object! { "arr".to_string() => Value::Array(vec![
+            Value::String("one".to_string()), Value::Number(2), Value::Bool(false)
+        ]) });
+        let actual = parse(input).unwrap();
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn all_primitives() {
+        let input = r#"
+            {
+                "str_val": "value",
+                "null_val": null,
+                "true_val": true,
+                "false_val": false,
+                "int_val": 5
+            }
+        "#;
+
+        let expected = Value::Object(json_object!(
+            "str_val".to_string() => Value::String("value".to_string()),
+            "null_val".to_string() => Value::Null,
+            "true_val".to_string() => Value::Bool(true),
+            "false_val".to_string() => Value::Bool(false),
+            "int_val".to_string() => Value::Number(5)
+        ));
+
+        let actual = parse(input).unwrap();
+        assert_eq!(expected, actual);
+    }
+}
