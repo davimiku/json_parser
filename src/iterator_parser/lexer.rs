@@ -113,7 +113,7 @@ impl<I: Iterator<Item = char>> Lexer<I> {
         Ok(ok_kind)
     }
 
-    /// Lexes a number
+    /// Lexes a positive integer as u64
     fn lex_uint(&mut self) -> Result<u64, LexErrorKind> {
         let mut value_str = String::new();
         value_str.push(self.curr.unwrap());
@@ -133,6 +133,12 @@ impl<I: Iterator<Item = char>> Lexer<I> {
         value_str
             .parse::<u64>()
             .map_err(|_| LexErrorKind::ParseNumberError)
+    }
+
+    /// Lexes a negative integer as i64
+    fn lex_int(&mut self) -> Result<i64, LexErrorKind> {
+        self.advance();
+        self.lex_uint().map(|u| -(u as i64))
     }
 }
 
@@ -176,6 +182,10 @@ impl<I: Iterator<Item = char>> Iterator for Lexer<I> {
                 TokenKind::Bool(false),
                 LexErrorKind::UnfinishedBoolValue(false),
             ),
+            '-' => match self.lex_int() {
+                Ok(i) => Ok(TokenKind::Int(i)),
+                Err(err) => Err(err),
+            },
             c if c.is_digit(10) => match self.lex_uint() {
                 Ok(u) => Ok(TokenKind::UInt(u)),
                 Err(err) => Err(err),
@@ -314,9 +324,17 @@ mod tests {
     }
 
     #[test]
-    fn simple_int() {
+    fn positive_int() {
         let actual = lex("123");
         let expected: Vec<TokenKind> = vec![TokenKind::UInt(123)];
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn negative_int() {
+        let actual = lex("-123");
+        let expected: Vec<TokenKind> = vec![TokenKind::Int(-123)];
 
         assert_eq!(actual, expected);
     }
