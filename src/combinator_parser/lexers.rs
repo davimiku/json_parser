@@ -90,7 +90,7 @@ pub(crate) fn any_char(input: &str) -> ParseResult<char> {
 /// abc
 /// ```
 ///
-/// Captures unit type (i.e. nothing) if `match_literal("abc") is used
+/// Captures unit type (i.e. nothing) if `match_literal("abc")` is used
 pub(crate) fn match_literal<'a>(expected: &'static str) -> impl Parser<'a, ()> {
     move |input: &'a str| match input.get(0..expected.len()) {
         Some(next) if next == expected => Ok((&input[expected.len()..], ())),
