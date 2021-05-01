@@ -59,6 +59,22 @@ fn number_value<'a>() -> impl Parser<'a, Value> {
         .map(|int| Value::Number(int))
 }
 
+/// Parses a primitive value as defined by JS primitives
+///
+/// Values in JSON that correspond to primitives in JS include:
+/// - null
+/// - boolean
+/// - string
+/// - number
+///
+/// Not included are objects and arrays
+fn primitive_value<'a>() -> impl Parser<'a, Value> {
+    either(
+        bool_value(),
+        either(null_value(), either(string_value(), number_value())),
+    )
+}
+
 /// Parses an object key/value pair
 ///
 /// ```
