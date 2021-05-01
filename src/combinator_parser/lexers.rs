@@ -61,8 +61,7 @@ pub(crate) fn space0<'a>() -> impl Parser<'a, Vec<char>> {
 ///    abc\t\n
 /// ```
 ///
-/// Captures unit type (i.e. nothing), given that `trim` was used to
-/// wrap `match_literal("abc") for this example.
+/// Returns the output of the provided parser.
 pub(crate) fn trim<'a, P, R: 'a + Clone>(parser: P) -> impl Parser<'a, R>
 where
     P: Parser<'a, R> + 'a,
