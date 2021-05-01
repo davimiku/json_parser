@@ -36,6 +36,22 @@ fn string_value<'a>() -> impl Parser<'a, Value> {
     quoted_string().map(|s| Value::String(s))
 }
 
+/// Parses a number value
+///
+/// Produces a JSON number value
+/// TODO: Implement full number parsing and remove possibility of panic
+fn number_value<'a>() -> impl Parser<'a, Value> {
+    one_or_more(pred(any_char, |c| c.is_numeric()))
+        .map(|chars| {
+            chars
+                .into_iter()
+                .collect::<String>()
+                .parse::<i64>()
+                .unwrap()
+        })
+        .map(|int| Value::Number(int))
+}
+
 /// Parses an object key/value pair
 ///
 /// ```
