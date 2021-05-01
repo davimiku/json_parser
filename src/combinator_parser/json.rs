@@ -3,8 +3,8 @@ use std::collections::BTreeMap;
 use crate::value::{NumberValue, Value};
 
 use super::{
-    common::{either, left, one_or_more, pair, pred, right, zero_or_more, zero_or_one},
-    lexers::{any_char, match_literal, quoted_string, trim},
+    common::{either, left, pair, right, zero_or_more, zero_or_one},
+    lexers::{int, match_literal, quoted_string, trim, uint},
     Parser,
 };
 
@@ -46,17 +46,12 @@ fn string_value<'a>() -> impl Parser<'a, Value> {
 /// Parses a number value
 ///
 /// Produces a JSON number value
-/// TODO: Implement full number parsing and remove possibility of panic
+/// TODO: Add float parsing
 fn number_value<'a>() -> impl Parser<'a, Value> {
-    one_or_more(pred(any_char, |c| c.is_numeric()))
-        .map(|chars| {
-            chars
-                .into_iter()
-                .collect::<String>()
-                .parse::<u64>()
-                .unwrap()
-        })
-        .map(|int| Value::Number(NumberValue::UInt(int)))
+    either(
+        int().map(|i| Value::Number(NumberValue::Int(i))),
+        uint().map(|u| Value::Number(NumberValue::UInt(u))),
+    )
 }
 
 /// Parses a primitive value as defined by JS primitives

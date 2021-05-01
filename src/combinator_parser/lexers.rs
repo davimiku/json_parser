@@ -21,6 +21,36 @@ pub(crate) fn quoted_string<'a>() -> impl Parser<'a, String> {
     .map(|chars| chars.into_iter().collect())
 }
 
+/// Parses a positive integer into a u64 integer
+///
+/// TODO: Remove unwrap, return the ParseIntError instead
+pub(crate) fn uint<'a>() -> impl Parser<'a, u64> {
+    one_or_more(pred(any_char, |c| c.is_numeric())).map(|chars| {
+        chars
+            .into_iter()
+            .collect::<String>()
+            .parse::<u64>()
+            .unwrap()
+    })
+}
+
+/// Parses a negative number into an i64 integer
+///
+/// TODO: Remove the possibility of panic, instead return
+/// Err if outside the bounds of i64::MIN and i64::MAX
+pub(crate) fn int<'a>() -> impl Parser<'a, i64> {
+    match_literal("-").and_then(|()| {
+        one_or_more(pred(any_char, |c| c.is_numeric())).map(|chars| {
+            chars
+                .into_iter()
+                .collect::<String>()
+                .parse::<i64>()
+                .map(|i| -i)
+                .unwrap()
+        })
+    })
+}
+
 /// Parses a whitespace character
 ///
 /// ```
@@ -107,6 +137,22 @@ mod tests {
         let input = "\"Hello!\"";
         let expected = Ok(("", "Hello!".to_string()));
         let actual = quoted_string().parse(input);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn uint_parser() {
+        let input = "123";
+        let expected = Ok(("", 123_u64));
+        let actual = uint().parse(input);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn int_parser() {
+        let input = "-123";
+        let expected = Ok(("", -123_i64));
+        let actual = int().parse(input);
         assert_eq!(expected, actual);
     }
 
