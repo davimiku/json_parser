@@ -153,6 +153,16 @@ fn array_value<'a>() -> impl Parser<'a, Value> {
     })
 }
 
+/// Parses non-primitive values
+///
+/// Values in JSON that correspond to non-primitive values
+/// in JS include:
+/// - object
+/// - array
+fn nonprimitive_value<'a>() -> impl Parser<'a, Value> {
+    either(object_value(), array_value())
+}
+
 pub(crate) fn json_value<'a>() -> impl Parser<'a, Value> {
     either(object_value(), array_value())
 }
