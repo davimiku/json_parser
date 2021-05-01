@@ -3,8 +3,8 @@ use std::collections::BTreeMap;
 use crate::value::Value;
 
 use super::{
-    common::{either, left, pair, right, zero_or_more},
-    lexers::{match_literal, quoted_string},
+    common::{either, left, one_or_more, pair, pred, right, zero_or_more, zero_or_one},
+    lexers::{any_char, match_literal, quoted_string},
     Parser,
 };
 
@@ -74,17 +74,16 @@ fn object_pair<'a>() -> impl Parser<'a, (String, Value)> {
 ///
 /// Captures the object as a Value::Object variant
 fn object_value<'a>() -> impl Parser<'a, Value> {
-    right(
-        match_literal("{"),
-        left(zero_or_more(object_pair()), match_literal("}")),
-    )
-    .map(|v| {
-        let mut map: BTreeMap<String, Value> = BTreeMap::new();
-        for (key, val) in v {
-            map.insert(key, val);
-        }
-        Value::Object(map)
+    match_literal("{").and_then(|_| {
+        left(zero_or_more(object_pair()), match_literal("}")).map(|v| {
+            let mut map: BTreeMap<String, Value> = BTreeMap::new();
+            for (key, val) in v {
+                map.insert(key, val);
+            }
+            Value::Object(map)
+        })
     })
+}
 }
 
 /// Parses an array
