@@ -77,12 +77,18 @@ fn primitive_value<'a>() -> impl Parser<'a, Value> {
 
 /// Parses an object key/value pair
 ///
+/// ex.
 /// ```
 /// "my_key":null
 /// ```
 ///
 /// Captures the key as a String, and the value as a JSON Value
 fn object_pair<'a>() -> impl Parser<'a, (String, Value)> {
+    pair(
+        trim(quoted_string()),
+        right(match_literal(":"), json_value()),
+    )
+}
 
 /// Parses an object pair that is preceded by a comma
 ///
@@ -271,7 +277,7 @@ mod tests {
                 json_object! { "a".to_string() => Value::Bool(true), "b".to_string() => Value::Bool(false) },
             ),
         ));
-        let actual = object_value().parse("{\"a\":true,\"b\":false}");
+        let actual = object_value().parse(r#"{"a":true, "b":false}"#);
         assert_eq!(expected, actual);
     }
 
