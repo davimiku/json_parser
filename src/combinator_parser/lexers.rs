@@ -39,6 +39,7 @@ pub(crate) fn whitespace_char<'a>() -> impl Parser<'a, char> {
 /// ```
 ///
 /// Captures a Vec<char> with the whitespace characters
+#[allow(dead_code)]
 pub(crate) fn space1<'a>() -> impl Parser<'a, Vec<char>> {
     one_or_more(whitespace_char())
 }
