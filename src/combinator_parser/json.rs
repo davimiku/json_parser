@@ -84,6 +84,19 @@ fn object_value<'a>() -> impl Parser<'a, Value> {
         })
     })
 }
+
+/// Parses a JSON value that is preceded by a comma
+///
+/// ex.
+/// ```
+/// ,null
+/// ```
+///
+/// JSON doesn't allow trailing commas on the last value
+/// of an array, so this is used to parse all values of
+/// an array except the first.
+fn comma_preceded_value<'a>() -> impl Parser<'a, Value> {
+    right(match_literal(","), json_value())
 }
 
 /// Parses an array
@@ -94,12 +107,27 @@ fn object_value<'a>() -> impl Parser<'a, Value> {
 ///    false,
 ///    null
 /// ]
+/// ```
+///
+/// An array value is:
+/// - "[" character
+/// - and_then zero or one json values
+/// - and_then zero to many ("," character and then json value)
+/// - finished with "]" character
 fn array_value<'a>() -> impl Parser<'a, Value> {
-    right(
-        match_literal("["),
-        left(zero_or_more(json_value()), match_literal("]")),
-    )
-    .map(|v| Value::Array(v))
+    match_literal("[").and_then(|_| {
+        left(
+            pair(
+                zero_or_one(json_value()),
+                zero_or_more(comma_preceded_value()),
+            ),
+            match_literal("]"),
+        )
+        .map(|(mut v1, mut v2)| {
+            v1.append(&mut v2);
+            Value::Array(v1)
+        })
+    })
 }
 
 pub(crate) fn json_value<'a>() -> impl Parser<'a, Value> {
