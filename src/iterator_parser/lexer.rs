@@ -55,10 +55,6 @@ impl<I: Iterator<Item = char>> Lexer<I> {
         }
     }
 
-    pub fn location(&self) -> Location {
-        self.location
-    }
-
     /// Grabs the next character from the iterator and
     /// updates the cursor location.
     fn advance(&mut self) -> Option<char> {
