@@ -112,6 +112,20 @@ mod tests {
     }
 
     #[test]
+    fn string_parser() {
+        let expected = Ok(("", Value::String("key".to_string())));
+        let actual = string_value().parse("\"key\"");
+        assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn int_parser() {
+        let expected = Ok(("", Value::Number(1)));
+        let actual = number_value().parse("1");
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
     fn object_pair_parser() {
         let expected = Ok(("", ("key".to_string(), Value::Null)));
         let actual = object_pair().parse("\"key\":null");
@@ -119,12 +133,55 @@ mod tests {
     }
 
     #[test]
-    fn object_parser() {
+    fn object_empty_parser() {
+        let expected = Ok(("", Value::Object(BTreeMap::new())));
+        let actual = object_value().parse("{}");
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn object_one_parser() {
         let expected = Ok((
             "",
             Value::Object(json_object! { "key".to_string() => Value::Null }),
         ));
         let actual = object_value().parse("{\"key\":null}");
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn object_many_parser() {
+        let expected = Ok((
+            "",
+            Value::Object(
+                json_object! { "a".to_string() => Value::Bool(true), "b".to_string() => Value::Bool(false) },
+            ),
+        ));
+        let actual = object_value().parse("{\"a\":true,\"b\":false}");
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn array_empty_parser() {
+        let expected = Ok(("", Value::Array(vec![])));
+        let actual = array_value().parse("[]");
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn array_one_parser() {
+        let expected = Ok(("", Value::Array(vec![Value::Null])));
+        let actual = array_value().parse("[null]");
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn array_many_parser() {
+        let expected = Ok((
+            "",
+            Value::Array(vec![Value::Null, Value::Bool(true), Value::Bool(false)]),
+        ));
+        let actual = array_value().parse("[null,true,false]");
         assert_eq!(expected, actual);
     }
 }
