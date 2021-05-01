@@ -4,7 +4,7 @@ use crate::value::Value;
 
 use super::{
     common::{either, left, one_or_more, pair, pred, right, zero_or_more, zero_or_one},
-    lexers::{any_char, match_literal, quoted_string},
+    lexers::{any_char, match_literal, quoted_string, trim},
     Parser,
 };
 
@@ -163,8 +163,17 @@ fn nonprimitive_value<'a>() -> impl Parser<'a, Value> {
     either(object_value(), array_value())
 }
 
+/// Parses the input into a JSON value
+///
+/// Values in JSON include:
+/// - null
+/// - boolean
+/// - string
+/// - number
+/// - object
+/// - array
 pub(crate) fn json_value<'a>() -> impl Parser<'a, Value> {
-    either(object_value(), array_value())
+    trim(either(primitive_value(), nonprimitive_value()))
 }
 
 #[cfg(test)]
@@ -264,7 +273,7 @@ mod tests {
             "",
             Value::Array(vec![Value::Null, Value::Bool(true), Value::Bool(false)]),
         ));
-        let actual = array_value().parse("[null,true,false]");
+        let actual = array_value().parse("[null, true, false]");
         assert_eq!(expected, actual);
     }
 }
