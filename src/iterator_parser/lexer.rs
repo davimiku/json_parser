@@ -114,7 +114,7 @@ impl<I: Iterator<Item = char>> Lexer<I> {
     }
 
     /// Lexes a number
-    fn lex_number(&mut self) -> Result<i64, LexErrorKind> {
+    fn lex_uint(&mut self) -> Result<u64, LexErrorKind> {
         let mut value_str = String::new();
         value_str.push(self.curr.unwrap());
         loop {
@@ -131,7 +131,7 @@ impl<I: Iterator<Item = char>> Lexer<I> {
         }
 
         value_str
-            .parse::<i64>()
+            .parse::<u64>()
             .map_err(|_| LexErrorKind::ParseNumberError)
     }
 }
@@ -176,8 +176,8 @@ impl<I: Iterator<Item = char>> Iterator for Lexer<I> {
                 TokenKind::Bool(false),
                 LexErrorKind::UnfinishedBoolValue(false),
             ),
-            c if c.is_digit(10) => match self.lex_number() {
-                Ok(i) => Ok(TokenKind::Number(i)),
+            c if c.is_digit(10) => match self.lex_uint() {
+                Ok(u) => Ok(TokenKind::UInt(u)),
                 Err(err) => Err(err),
             },
             c => Err(LexErrorKind::CharNotRecognized(c)),
@@ -280,9 +280,9 @@ mod tests {
         let actual = lex("[1, 2]");
         let expected: Vec<TokenKind> = vec![
             TokenKind::LeftBracket,
-            TokenKind::Number(1),
+            TokenKind::UInt(1),
             TokenKind::Comma,
-            TokenKind::Number(2),
+            TokenKind::UInt(2),
             TokenKind::RightBracket,
         ];
 
@@ -316,7 +316,7 @@ mod tests {
     #[test]
     fn simple_int() {
         let actual = lex("123");
-        let expected: Vec<TokenKind> = vec![TokenKind::Number(123)];
+        let expected: Vec<TokenKind> = vec![TokenKind::UInt(123)];
 
         assert_eq!(actual, expected);
     }

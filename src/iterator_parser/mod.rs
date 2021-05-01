@@ -1,6 +1,9 @@
 use std::collections::BTreeMap;
 
-use crate::{location::Location, value::Value};
+use crate::{
+    location::Location,
+    value::{NumberValue, Value},
+};
 mod lexer;
 mod token;
 use lexer::{LexError, LexErrorKind, LexResult, Lexer};
@@ -45,7 +48,9 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
         match token.kind {
             TokenKind::Null => Ok(Value::Null),
             TokenKind::String(s) => Ok(Value::String(s)),
-            TokenKind::Number(n) => Ok(Value::Number(n)),
+            TokenKind::Int(i) => Ok(Value::Number(NumberValue::Int(i))),
+            TokenKind::UInt(u) => Ok(Value::Number(NumberValue::UInt(u))),
+            TokenKind::Float(f) => Ok(Value::Number(NumberValue::Float(f))),
             TokenKind::Bool(b) => Ok(Value::Bool(b)),
             TokenKind::LeftBrace => self.parse_object(),
             TokenKind::LeftBracket => self.parse_array(),
@@ -63,9 +68,17 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
                 TokenKind::String(s) => {
                     check_comma!(needs_comma, Value::String(s.to_string()), token)
                 }
-                TokenKind::Number(n) => check_comma!(needs_comma, Value::Number(n.clone()), token),
+                TokenKind::Int(i) => {
+                    check_comma!(needs_comma, Value::Number(NumberValue::Int(*i)), token)
+                }
+                TokenKind::UInt(u) => {
+                    check_comma!(needs_comma, Value::Number(NumberValue::UInt(*u)), token)
+                }
+                TokenKind::Float(f) => {
+                    check_comma!(needs_comma, Value::Number(NumberValue::Float(*f)), token)
+                }
                 TokenKind::Null => check_comma!(needs_comma, Value::Null, token),
-                TokenKind::Bool(b) => check_comma!(needs_comma, Value::Bool(b.clone()), token),
+                TokenKind::Bool(b) => check_comma!(needs_comma, Value::Bool(*b), token),
                 TokenKind::LeftBrace => self.parse_object(),
                 TokenKind::LeftBracket => self.parse_array(),
                 TokenKind::RightBracket => break,
@@ -205,7 +218,7 @@ pub fn parse(input: &str) -> ParseResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::json_object;
+    use crate::{json_object, value::NumberValue};
 
     #[test]
     fn just_null() {
@@ -251,7 +264,11 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Array(vec![Value::Number(1), Value::Number(2), Value::Number(3)])
+            Value::Array(vec![
+                Value::Number(NumberValue::UInt(1)),
+                Value::Number(NumberValue::UInt(2)),
+                Value::Number(NumberValue::UInt(3))
+            ])
         )
     }
 
@@ -273,7 +290,9 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(json_object! { "key".to_string() => Value::Number(1) })
+            Value::Object(
+                json_object! { "key".to_string() => Value::Number(NumberValue::UInt(1)) }
+            )
         )
     }
 

@@ -20,7 +20,10 @@ mod tests {
 
     use super::combinator_parse;
 
-    use crate::{json_object, value::Value};
+    use crate::{
+        json_object,
+        value::{NumberValue, Value},
+    };
     use std::collections::BTreeMap;
 
     #[test]
@@ -48,8 +51,8 @@ mod tests {
             "null_val".to_string() => Value::Null,
             "true_val".to_string() => Value::Bool(true),
             "false_val".to_string() => Value::Bool(false),
-            "int_val".to_string() => Value::Number(5),
-            "arr_val".to_string() => Value::Array(vec! [Value::String("one".to_string()), Value::Number(2), Value::Bool(false)]),
+            "int_val".to_string() => Value::Number(NumberValue::UInt(5)),
+            "arr_val".to_string() => Value::Array(vec! [Value::String("one".to_string()), Value::Number(NumberValue::UInt(2)), Value::Bool(false)]),
             "obj_val".to_string() => Value::Object(json_object!(
                 "nested_key".to_string() => Value::String("nested_value".to_string())
             ))

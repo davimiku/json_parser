@@ -104,7 +104,7 @@ pub fn parse<'a>(input: &str) -> Result<Value, &str> {
 /// Integration tests across the combinator parser
 #[cfg(test)]
 mod tests {
-    use crate::json_object;
+    use crate::{json_object, value::NumberValue};
     use std::collections::BTreeMap;
 
     use super::*;
@@ -179,7 +179,7 @@ mod tests {
             ]
         }"#;
         let expected = Value::Object(json_object! { "arr".to_string() => Value::Array(vec![
-            Value::String("one".to_string()), Value::Number(2), Value::Bool(false)
+            Value::String("one".to_string()), Value::Number(NumberValue::UInt(2)), Value::Bool(false)
         ]) });
         let actual = parse(input).unwrap();
         assert_eq!(expected, actual);
@@ -202,7 +202,7 @@ mod tests {
             "null_val".to_string() => Value::Null,
             "true_val".to_string() => Value::Bool(true),
             "false_val".to_string() => Value::Bool(false),
-            "int_val".to_string() => Value::Number(5)
+            "int_val".to_string() => Value::Number(NumberValue::UInt(5))
         ));
 
         let actual = parse(input).unwrap();

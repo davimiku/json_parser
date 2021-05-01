@@ -2,10 +2,12 @@ use std::fmt::{self, Write};
 
 use crate::location::Location;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
     /// Literals
-    Number(i64),
+    Int(i64),
+    UInt(u64),
+    Float(f64),
     Null,
     Bool(bool),
 
@@ -33,7 +35,9 @@ impl fmt::Display for TokenKind {
             TokenKind::Comma => f.write_char(','),
             TokenKind::Colon => f.write_char(':'),
             TokenKind::String(val) => write!(f, "{:?}", val),
-            TokenKind::Number(val) => write!(f, "{:?}", val),
+            TokenKind::Int(val) => write!(f, "{:?}", val),
+            TokenKind::UInt(val) => write!(f, "{:?}", val),
+            TokenKind::Float(val) => write!(f, "{:?}", val),
             TokenKind::Bool(val) => write!(f, "{:?}", val),
             TokenKind::Null => f.write_str("null"),
             TokenKind::EOF => f.write_str("END_OF_FILE"),
@@ -41,7 +45,7 @@ impl fmt::Display for TokenKind {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub kind: TokenKind,
     pub location: Location,

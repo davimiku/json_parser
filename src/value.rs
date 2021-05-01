@@ -22,9 +22,9 @@ macro_rules! json_object(
 /// - Array
 /// - Object
 /// - Null
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
-    Number(i64),
+    Number(NumberValue),
     String(String),
     Bool(bool),
     Array(Vec<Value>),
@@ -135,6 +135,58 @@ impl fmt::Display for Value {
                 output.push('}');
                 write!(f, "{}", output)
             }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum NumberValue {
+    Int(i64),
+    UInt(u64),
+    Float(f64),
+}
+
+impl NumberValue {
+    pub fn as_i64(&self) -> Option<i64> {
+        match *self {
+            NumberValue::Int(i) => Some(i),
+            _ => None,
+        }
+    }
+
+    pub fn is_i64(&self) -> bool {
+        self.as_i64().is_some()
+    }
+
+    pub fn as_u64(&self) -> Option<u64> {
+        match *self {
+            NumberValue::UInt(u) => Some(u),
+            _ => None,
+        }
+    }
+
+    pub fn is_u64(&self) -> bool {
+        self.as_u64().is_some()
+    }
+
+    pub fn as_f64(&self) -> Option<f64> {
+        match *self {
+            NumberValue::Float(f) => Some(f),
+            _ => None,
+        }
+    }
+
+    pub fn is_f64(&self) -> bool {
+        self.as_f64().is_some()
+    }
+}
+
+impl fmt::Display for NumberValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            NumberValue::Int(n) => write!(f, "{}", n),
+            NumberValue::UInt(n) => write!(f, "{}", n),
+            NumberValue::Float(n) => write!(f, "{}", n),
         }
     }
 }

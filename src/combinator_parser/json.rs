@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::value::Value;
+use crate::value::{NumberValue, Value};
 
 use super::{
     common::{either, left, one_or_more, pair, pred, right, zero_or_more, zero_or_one},
@@ -53,10 +53,10 @@ fn number_value<'a>() -> impl Parser<'a, Value> {
             chars
                 .into_iter()
                 .collect::<String>()
-                .parse::<i64>()
+                .parse::<u64>()
                 .unwrap()
         })
-        .map(|int| Value::Number(int))
+        .map(|int| Value::Number(NumberValue::UInt(int)))
 }
 
 /// Parses a primitive value as defined by JS primitives
@@ -206,7 +206,7 @@ pub(crate) fn json_value<'a>() -> impl Parser<'a, Value> {
 
 #[cfg(test)]
 mod tests {
-    use crate::json_object;
+    use crate::{json_object, value::NumberValue};
 
     use super::*;
 
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn int_parser() {
-        let expected = Ok(("", Value::Number(1)));
+        let expected = Ok(("", Value::Number(NumberValue::UInt(1))));
         let actual = number_value().parse("1");
         assert_eq!(expected, actual);
     }
