@@ -66,6 +66,23 @@ where
     map(pair(parser1, parser2), |(_left, right)| right)
 }
 
+/// Parses zero or one match of the provided parser
+pub(crate) fn zero_or_one<'a, P, Output>(parser: P) -> impl Parser<'a, Vec<Output>>
+where
+    P: Parser<'a, Output>,
+{
+    move |mut input| {
+        let mut result = Vec::new();
+
+        if let Ok((next_input, next_item)) = parser.parse(input) {
+            input = next_input;
+            result.push(next_item);
+        }
+
+        Ok((input, result))
+    }
+}
+
 /// Parses zero or more matches of the provided parser
 pub(crate) fn zero_or_more<'a, P, A>(parser: P) -> impl Parser<'a, Vec<A>>
 where
@@ -167,11 +184,12 @@ mod tests {
     }
 
     #[test]
-    fn one_or_more_combinator() {
-        let parser = one_or_more(match_literal("ha"));
-        assert_eq!(Ok(("", vec![(), (), ()])), parser.parse("hahaha"));
-        assert_eq!(Err("ahah"), parser.parse("ahah"));
-        assert_eq!(Err(""), parser.parse(""));
+    fn zero_or_one_combinator() {
+        let parser = zero_or_one(match_literal("yeet"));
+        assert_eq!(Ok(("", vec![])), parser.parse(""));
+        assert_eq!(Ok(("teey", vec![])), parser.parse("teey"));
+        assert_eq!(Ok(("", vec![()])), parser.parse("yeet"));
+        assert_eq!(Ok(("yeet", vec![()])), parser.parse("yeetyeet"));
     }
 
     #[test]
@@ -180,6 +198,14 @@ mod tests {
         assert_eq!(Ok(("", vec![(), (), ()])), parser.parse("hahaha"));
         assert_eq!(Ok(("ahah", vec![])), parser.parse("ahah"));
         assert_eq!(Ok(("", vec![])), parser.parse(""));
+    }
+
+    #[test]
+    fn one_or_more_combinator() {
+        let parser = one_or_more(match_literal("ha"));
+        assert_eq!(Ok(("", vec![(), (), ()])), parser.parse("hahaha"));
+        assert_eq!(Err("ahah"), parser.parse("ahah"));
+        assert_eq!(Err(""), parser.parse(""));
     }
 
     #[test]
