@@ -22,6 +22,13 @@ fn false_value<'a>() -> impl Parser<'a, Value> {
     match_literal("false").map(|_| Value::Bool(false))
 }
 
+/// Parses a boolean value
+///
+/// Either `true` or `false`
+fn bool_value<'a>() -> impl Parser<'a, Value> {
+    either(true_value(), false_value())
+}
+
 /// Parses the literal characters "null"
 ///
 /// Produces a JSON null value
