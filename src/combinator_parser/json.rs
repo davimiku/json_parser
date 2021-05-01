@@ -29,6 +29,13 @@ fn null_value<'a>() -> impl Parser<'a, Value> {
     match_literal("null").map(|_| Value::Null)
 }
 
+/// Parses the characters between quotes
+///
+/// Produces a JSON string value
+fn string_value<'a>() -> impl Parser<'a, Value> {
+    quoted_string().map(|s| Value::String(s))
+}
+
 /// Parses an object key/value pair
 ///
 /// ```
