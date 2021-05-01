@@ -67,9 +67,9 @@ where
 }
 
 /// Parses zero or one match of the provided parser
-pub(crate) fn zero_or_one<'a, P, Output>(parser: P) -> impl Parser<'a, Vec<Output>>
+pub(crate) fn zero_or_one<'a, P, R>(parser: P) -> impl Parser<'a, Vec<R>>
 where
-    P: Parser<'a, Output>,
+    P: Parser<'a, R>,
 {
     move |mut input| {
         let mut result = Vec::new();
@@ -84,9 +84,9 @@ where
 }
 
 /// Parses zero or more matches of the provided parser
-pub(crate) fn zero_or_more<'a, P, A>(parser: P) -> impl Parser<'a, Vec<A>>
+pub(crate) fn zero_or_more<'a, P, R>(parser: P) -> impl Parser<'a, Vec<R>>
 where
-    P: Parser<'a, A>,
+    P: Parser<'a, R>,
 {
     move |mut input| {
         let mut result = Vec::new();
@@ -101,9 +101,9 @@ where
 }
 
 /// Parses where there is at least one match for the provided parser
-pub(crate) fn one_or_more<'a, P, A>(parser: P) -> impl Parser<'a, Vec<A>>
+pub(crate) fn one_or_more<'a, P, R>(parser: P) -> impl Parser<'a, Vec<R>>
 where
-    P: Parser<'a, A>,
+    P: Parser<'a, R>,
 {
     move |mut input| {
         let mut result = Vec::new();
