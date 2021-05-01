@@ -248,7 +248,14 @@ mod tests {
     #[test]
     fn object_pair_parser() {
         let expected = Ok(("", ("key".to_string(), Value::Null)));
-        let actual = object_pair().parse("\"key\":null");
+        let actual = object_pair().parse("\"key\": null");
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn object_pair_underscore_parser() {
+        let expected = Ok(("", ("key_key".to_string(), Value::Null)));
+        let actual = object_pair().parse("\"key_key\": null");
         assert_eq!(expected, actual);
     }
 
