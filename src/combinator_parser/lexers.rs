@@ -139,6 +139,13 @@ mod tests {
     }
 
     #[test]
+    fn literal_parser_error() {
+        let input = "$$$";
+        let expected = Err(input);
+        assert_eq!(expected, match_literal("[").parse(input))
+    }
+
+    #[test]
     fn literal_parser() {
         let parse_joe = match_literal("Hello Joe!");
         assert_eq!(Ok(("", ())), parse_joe.parse("Hello Joe!"));
