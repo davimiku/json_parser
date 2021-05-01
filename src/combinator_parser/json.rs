@@ -83,7 +83,19 @@ fn primitive_value<'a>() -> impl Parser<'a, Value> {
 ///
 /// Captures the key as a String, and the value as a JSON Value
 fn object_pair<'a>() -> impl Parser<'a, (String, Value)> {
-    pair(quoted_string(), right(match_literal(":"), null_value()))
+
+/// Parses an object pair that is preceded by a comma
+///
+/// ex.
+/// ```
+/// ,"my_key":null
+/// ```
+///
+/// JSON object pairs cannot have trailing commas on the last
+/// pair, so all pairs except the first are modeled as having
+/// a preceding comma.
+fn comma_preceded_object_pair<'a>() -> impl Parser<'a, (String, Value)> {
+    right(match_literal(","), object_pair())
 }
 
 /// Parses an object
@@ -98,10 +110,20 @@ fn object_pair<'a>() -> impl Parser<'a, (String, Value)> {
 /// Captures the object as a Value::Object variant
 fn object_value<'a>() -> impl Parser<'a, Value> {
     match_literal("{").and_then(|_| {
-        left(zero_or_more(object_pair()), match_literal("}")).map(|v| {
+        left(
+            pair(
+                zero_or_one(object_pair()),
+                zero_or_more(comma_preceded_object_pair()),
+            ),
+            match_literal("}"),
+        )
+        .map(|(v1, v2)| {
             let mut map: BTreeMap<String, Value> = BTreeMap::new();
-            for (key, val) in v {
-                map.insert(key, val);
+            for (key, value) in v1 {
+                map.insert(key, value);
+            }
+            for (key, value) in v2 {
+                map.insert(key, value);
             }
             Value::Object(map)
         })
