@@ -2,7 +2,7 @@
 name = "json_parser"
 version = "0.1.0"
 authors = ["David Mikulis <davidmikulis@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 name = "json_parser_lib"
