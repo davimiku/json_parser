@@ -49,15 +49,15 @@ mod tests {
 
     fn expected_value() -> Value {
         Value::Object(json_object!(
-            "str_val".to_string() => Value::String("value".to_string()),
-            "null_val".to_string() => Value::Null,
-            "true_val".to_string() => Value::Bool(true),
-            "false_val".to_string() => Value::Bool(false),
-            "uint_val".to_string() => Value::Number(NumberValue::UInt(5)),
-            "int_val".to_string() => Value::Number(NumberValue::Int(-6)),
-            "arr_val".to_string() => Value::Array(vec! [Value::String("one".to_string()), Value::Number(NumberValue::UInt(2)), Value::Bool(false)]),
-            "obj_val".to_string() => Value::Object(json_object!(
-                "nested_key".to_string() => Value::String("nested_value".to_string())
+            "str_val" => Value::String("value".to_string()),
+            "null_val" => Value::Null,
+            "true_val" => Value::Bool(true),
+            "false_val" => Value::Bool(false),
+            "uint_val" => Value::Number(NumberValue::UInt(5)),
+            "int_val" => Value::Number(NumberValue::Int(-6)),
+            "arr_val" => Value::Array(vec! [Value::String("one".to_string()), Value::Number(NumberValue::UInt(2)), Value::Bool(false)]),
+            "obj_val" => Value::Object(json_object!(
+                "nested_key" => Value::String("nested_value".to_string())
             ))
         ))
     }

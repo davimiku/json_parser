@@ -124,7 +124,10 @@ mod tests {
             "b": true
         }"#;
         let expected = Value::Object(
-            json_object! { "a".to_string() => Value::String("value".to_string()), "b".to_string() => Value::Bool(true) },
+            json_object! { 
+                "a" => Value::String("value".to_string()), 
+                "b" => Value::Bool(true) 
+            },
         );
         let actual = parse(input).unwrap();
         assert_eq!(expected, actual);
@@ -163,7 +166,7 @@ mod tests {
             "obj": {}
         }"#;
         let expected =
-            Value::Object(json_object! { "obj".to_string() => Value::Object(BTreeMap::new()) });
+            Value::Object(json_object! { "obj" => Value::Object(BTreeMap::new()) });
         let actual = parse(input).unwrap();
         assert_eq!(expected, actual);
     }
@@ -178,7 +181,7 @@ mod tests {
                 false
             ]
         }"#;
-        let expected = Value::Object(json_object! { "arr".to_string() => Value::Array(vec![
+        let expected = Value::Object(json_object! { "arr" => Value::Array(vec![
             Value::String("one".to_string()), Value::Number(NumberValue::UInt(2)), Value::Bool(false)
         ]) });
         let actual = parse(input).unwrap();
@@ -198,11 +201,11 @@ mod tests {
         "#;
 
         let expected = Value::Object(json_object!(
-            "str_val".to_string() => Value::String("value".to_string()),
-            "null_val".to_string() => Value::Null,
-            "true_val".to_string() => Value::Bool(true),
-            "false_val".to_string() => Value::Bool(false),
-            "int_val".to_string() => Value::Number(NumberValue::UInt(5))
+            "str_val" => Value::String("value".to_string()),
+            "null_val" => Value::Null,
+            "true_val" => Value::Bool(true),
+            "false_val" => Value::Bool(false),
+            "int_val" => Value::Number(NumberValue::UInt(5))
         ));
 
         let actual = parse(input).unwrap();

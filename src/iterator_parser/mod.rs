@@ -279,7 +279,7 @@ mod tests {
         assert_eq!(
             value.unwrap(),
             Value::Array(vec![Value::Object(
-                json_object! { "key".to_string() => Value::Null }
+                json_object! { "key" => Value::Null }
             )])
         )
     }
@@ -291,7 +291,7 @@ mod tests {
         assert_eq!(
             value.unwrap(),
             Value::Object(
-                json_object! { "key".to_string() => Value::Number(NumberValue::UInt(1)) }
+                json_object! { "key" => Value::Number(NumberValue::UInt(1)) }
             )
         )
     }
@@ -302,7 +302,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(json_object! { "key".to_string() => Value::String("value".to_string()) })
+            Value::Object(json_object! { "key" => Value::String("value".to_string()) })
         )
     }
 
@@ -312,7 +312,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(json_object! { "key".to_string() => Value::Null })
+            Value::Object(json_object! { "key" => Value::Null })
         )
     }
 
@@ -322,7 +322,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(json_object! { "key".to_string() => Value::Bool(true) })
+            Value::Object(json_object! { "key" => Value::Bool(true) })
         )
     }
 
@@ -332,7 +332,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(json_object! { "key".to_string() => Value::Bool(false) })
+            Value::Object(json_object! { "key" => Value::Bool(false) })
         )
     }
 
@@ -343,7 +343,7 @@ mod tests {
         assert_eq!(
             value.unwrap(),
             Value::Object(
-                json_object! { "key".to_string() => Value::Object(json_object! { "innerkey".to_string() => Value::Null})}
+                json_object! { "key" => Value::Object(json_object! { "innerkey" => Value::Null})}
             )
         )
     }

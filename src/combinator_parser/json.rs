@@ -265,7 +265,7 @@ mod tests {
     fn object_one_parser() {
         let expected = Ok((
             "",
-            Value::Object(json_object! { "key".to_string() => Value::Null }),
+            Value::Object(json_object! { "key" => Value::Null }),
         ));
         let actual = object_value().parse("{\"key\":null}");
         assert_eq!(expected, actual);

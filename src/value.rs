@@ -6,7 +6,7 @@ macro_rules! json_object(
         {
             let mut m = BTreeMap::new();
             $(
-                m.insert($key, $value);
+                m.insert($key.to_string(), $value);
             )+
             m
         }
@@ -205,7 +205,7 @@ mod tests {
     #[test]
     fn display_object() {
         let val =
-            Value::Object(json_object! { "key".to_string() => Value::String("value".to_string()) });
+            Value::Object(json_object! { "key" => Value::String("value".to_string()) });
         let s = format!("{}", val);
         assert_eq!("{\"key\": \"value\"}".to_string(), s);
     }
