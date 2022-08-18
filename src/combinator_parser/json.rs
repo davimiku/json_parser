@@ -73,7 +73,7 @@ fn primitive_value<'a>() -> impl Parser<'a, Value> {
 /// Parses an object key/value pair
 ///
 /// ex.
-/// ```
+/// ```text
 /// "my_key":null
 /// ```
 ///
@@ -88,7 +88,7 @@ fn object_pair<'a>() -> impl Parser<'a, (String, Value)> {
 /// Parses an object pair that is preceded by a comma
 ///
 /// ex.
-/// ```
+/// ```text
 /// ,"my_key":null
 /// ```
 ///
@@ -134,7 +134,7 @@ fn object_value<'a>() -> impl Parser<'a, Value> {
 /// Parses a JSON value that is preceded by a comma
 ///
 /// ex.
-/// ```
+/// ```text
 /// ,null
 /// ```
 ///

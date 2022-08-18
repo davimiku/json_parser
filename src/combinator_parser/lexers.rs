@@ -5,7 +5,7 @@ use super::{
 
 /// Parses the content contained between two literal quotation characters
 ///
-/// ```
+/// ```text
 /// "quote"
 /// ```
 ///
@@ -53,7 +53,7 @@ pub(crate) fn int<'a>() -> impl Parser<'a, i64> {
 
 /// Parses a whitespace character
 ///
-/// ```
+/// ```text
 /// \n
 /// ```
 ///
@@ -64,7 +64,7 @@ pub(crate) fn whitespace_char<'a>() -> impl Parser<'a, char> {
 
 /// Parses for one to many whitespace characters
 ///
-/// ```
+/// ```text
 /// \t \n
 /// ```
 ///
@@ -76,7 +76,7 @@ pub(crate) fn space1<'a>() -> impl Parser<'a, Vec<char>> {
 
 /// Parses for zero to many whitespace characters
 ///
-/// ```
+/// ```text
 /// \t \n
 /// ```
 ///
@@ -88,7 +88,7 @@ pub(crate) fn space0<'a>() -> impl Parser<'a, Vec<char>> {
 /// Parses using the provided parser, while ignoring whitespace
 /// on both sides of the current input.
 ///
-/// ```
+/// ```text
 ///    abc\t\n
 /// ```
 ///
@@ -102,7 +102,7 @@ where
 
 /// Parses any character
 ///
-/// ```
+/// ```text
 /// a
 /// ```
 ///
@@ -116,7 +116,7 @@ pub(crate) fn any_char(input: &str) -> ParseResult<char> {
 
 /// Matches the input str to a literal str
 ///
-/// ```
+/// ```text
 /// abc
 /// ```
 ///
