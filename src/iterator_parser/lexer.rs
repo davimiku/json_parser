@@ -182,14 +182,14 @@ impl<I: Iterator<Item = char>> Iterator for Lexer<I> {
                 TokenKind::Bool(false),
                 LexErrorKind::UnfinishedBoolValue(false),
             ),
-            '-' => match self.lex_int() {
-                Ok(i) => Ok(TokenKind::Int(i)),
-                Err(err) => Err(err),
-            },
-            c if c.is_digit(10) => match self.lex_uint() {
-                Ok(u) => Ok(TokenKind::UInt(u)),
-                Err(err) => Err(err),
-            },
+            // '-' => match self.lex_int() {
+            //     Ok(i) => Ok(TokenKind::Int(i)),
+            //     Err(err) => Err(err),
+            // },
+            // c if c.is_digit(10) => match self.lex_uint() {
+            //     Ok(u) => Ok(TokenKind::UInt(u)),
+            //     Err(err) => Err(err),
+            // },
             c => Err(LexErrorKind::CharNotRecognized(c)),
         };
 
@@ -290,9 +290,9 @@ mod tests {
         let actual = lex("[1, 2]");
         let expected: Vec<TokenKind> = vec![
             TokenKind::LeftBracket,
-            TokenKind::UInt(1),
+            TokenKind::Float(1.0),
             TokenKind::Comma,
-            TokenKind::UInt(2),
+            TokenKind::Float(2.0),
             TokenKind::RightBracket,
         ];
 
@@ -326,7 +326,7 @@ mod tests {
     #[test]
     fn positive_int() {
         let actual = lex("123");
-        let expected: Vec<TokenKind> = vec![TokenKind::UInt(123)];
+        let expected: Vec<TokenKind> = vec![TokenKind::Float(123.0)];
 
         assert_eq!(actual, expected);
     }
@@ -334,7 +334,7 @@ mod tests {
     #[test]
     fn negative_int() {
         let actual = lex("-123");
-        let expected: Vec<TokenKind> = vec![TokenKind::Int(-123)];
+        let expected: Vec<TokenKind> = vec![TokenKind::Float(-123.0)];
 
         assert_eq!(actual, expected);
     }

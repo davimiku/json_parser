@@ -104,7 +104,7 @@ pub fn parse<'a>(input: &str) -> Result<Value, &str> {
 /// Integration tests across the combinator parser
 #[cfg(test)]
 mod tests {
-    use crate::{json_object, value::NumberValue};
+    use crate::json_object;
     use std::collections::BTreeMap;
 
     use super::*;
@@ -123,12 +123,10 @@ mod tests {
             "a": "value",
             "b": true
         }"#;
-        let expected = Value::Object(
-            json_object! { 
-                "a" => Value::String("value".to_string()), 
-                "b" => Value::Bool(true) 
-            },
-        );
+        let expected = Value::Object(json_object! {
+            "a" => Value::String("value".to_string()),
+            "b" => Value::Boolean(true)
+        });
         let actual = parse(input).unwrap();
         assert_eq!(expected, actual);
     }
@@ -151,8 +149,8 @@ mod tests {
         ]"#;
         let expected = Value::Array(vec![
             Value::String("value".to_string()),
-            Value::Bool(true),
-            Value::Bool(false),
+            Value::Boolean(true),
+            Value::Boolean(false),
             Value::Null,
         ]);
         let actual = parse(input).unwrap();
@@ -165,8 +163,7 @@ mod tests {
         {
             "obj": {}
         }"#;
-        let expected =
-            Value::Object(json_object! { "obj" => Value::Object(BTreeMap::new()) });
+        let expected = Value::Object(json_object! { "obj" => Value::Object(BTreeMap::new()) });
         let actual = parse(input).unwrap();
         assert_eq!(expected, actual);
     }
@@ -182,7 +179,7 @@ mod tests {
             ]
         }"#;
         let expected = Value::Object(json_object! { "arr" => Value::Array(vec![
-            Value::String("one".to_string()), Value::Number(NumberValue::UInt(2)), Value::Bool(false)
+            Value::String("one".to_string()), Value::Number(2.0), Value::Boolean(false)
         ]) });
         let actual = parse(input).unwrap();
         assert_eq!(expected, actual);
@@ -203,9 +200,9 @@ mod tests {
         let expected = Value::Object(json_object!(
             "str_val" => Value::String("value".to_string()),
             "null_val" => Value::Null,
-            "true_val" => Value::Bool(true),
-            "false_val" => Value::Bool(false),
-            "int_val" => Value::Number(NumberValue::UInt(5))
+            "true_val" => Value::Boolean(true),
+            "false_val" => Value::Boolean(false),
+            "int_val" => Value::Number(5.0)
         ));
 
         let actual = parse(input).unwrap();

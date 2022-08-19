@@ -20,10 +20,7 @@ mod tests {
 
     use super::{combinator_parse, iterator_parse};
 
-    use crate::{
-        json_object,
-        value::{NumberValue, Value},
-    };
+    use crate::{json_object, value::Value};
     use std::collections::BTreeMap;
 
     fn full_input() -> &'static str {
@@ -33,8 +30,7 @@ mod tests {
                 "null_val": null,
                 "true_val": true,
                 "false_val": false,
-                "uint_val": 5,
-                "int_val": -6,
+                "num_val": 5,
                 "arr_val": [
                     "one",
                     2,
@@ -51,11 +47,10 @@ mod tests {
         Value::Object(json_object!(
             "str_val" => Value::String("value".to_string()),
             "null_val" => Value::Null,
-            "true_val" => Value::Bool(true),
-            "false_val" => Value::Bool(false),
-            "uint_val" => Value::Number(NumberValue::UInt(5)),
-            "int_val" => Value::Number(NumberValue::Int(-6)),
-            "arr_val" => Value::Array(vec! [Value::String("one".to_string()), Value::Number(NumberValue::UInt(2)), Value::Bool(false)]),
+            "true_val" => Value::Boolean(true),
+            "false_val" => Value::Boolean(false),
+            "num_val" => Value::Number(5.0),
+            "arr_val" => Value::Array(vec! [Value::String("one".to_string()), Value::Number(2.0), Value::Boolean(false)]),
             "obj_val" => Value::Object(json_object!(
                 "nested_key" => Value::String("nested_value".to_string())
             ))

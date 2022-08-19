@@ -1,9 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::{
-    location::Location,
-    value::{NumberValue, Value},
-};
+use crate::{location::Location, value::Value};
 mod lexer;
 mod token;
 use lexer::{LexError, LexErrorKind, LexResult, Lexer};
@@ -48,10 +45,8 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
         match token.kind {
             TokenKind::Null => Ok(Value::Null),
             TokenKind::String(s) => Ok(Value::String(s)),
-            TokenKind::Int(i) => Ok(Value::Number(NumberValue::Int(i))),
-            TokenKind::UInt(u) => Ok(Value::Number(NumberValue::UInt(u))),
-            TokenKind::Float(f) => Ok(Value::Number(NumberValue::Float(f))),
-            TokenKind::Bool(b) => Ok(Value::Bool(b)),
+            TokenKind::Float(f) => Ok(Value::Number(f)),
+            TokenKind::Bool(b) => Ok(Value::Boolean(b)),
             TokenKind::LeftBrace => self.parse_object(),
             TokenKind::LeftBracket => self.parse_array(),
             TokenKind::EOF => make_error!(ParseErrorKind::EarlyEOF, token),
@@ -68,17 +63,11 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
                 TokenKind::String(s) => {
                     check_comma!(needs_comma, Value::String(s.to_string()), token)
                 }
-                TokenKind::Int(i) => {
-                    check_comma!(needs_comma, Value::Number(NumberValue::Int(*i)), token)
-                }
-                TokenKind::UInt(u) => {
-                    check_comma!(needs_comma, Value::Number(NumberValue::UInt(*u)), token)
-                }
                 TokenKind::Float(f) => {
-                    check_comma!(needs_comma, Value::Number(NumberValue::Float(*f)), token)
+                    check_comma!(needs_comma, Value::Number(*f), token)
                 }
                 TokenKind::Null => check_comma!(needs_comma, Value::Null, token),
-                TokenKind::Bool(b) => check_comma!(needs_comma, Value::Bool(*b), token),
+                TokenKind::Bool(b) => check_comma!(needs_comma, Value::Boolean(*b), token),
                 TokenKind::LeftBrace => self.parse_object(),
                 TokenKind::LeftBracket => self.parse_array(),
                 TokenKind::RightBracket => break,
@@ -218,7 +207,7 @@ pub fn parse(input: &str) -> ParseResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{json_object, value::NumberValue};
+    use crate::json_object;
 
     #[test]
     fn just_null() {
@@ -231,14 +220,14 @@ mod tests {
     fn just_true() {
         let value = parse("true");
         assert!(value.is_ok());
-        assert_eq!(value.unwrap(), Value::Bool(true));
+        assert_eq!(value.unwrap(), Value::Boolean(true));
     }
 
     #[test]
     fn just_false() {
         let value = parse("false");
         assert!(value.is_ok());
-        assert_eq!(value.unwrap(), Value::Bool(false));
+        assert_eq!(value.unwrap(), Value::Boolean(false));
     }
 
     #[test]
@@ -254,20 +243,20 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Array(vec![Value::Bool(true), Value::Bool(false)])
+            Value::Array(vec![Value::Boolean(true), Value::Boolean(false)])
         )
     }
 
     #[test]
-    fn array_with_ints() {
+    fn array_with_numbers() {
         let value = parse("[1, 2, 3]");
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
             Value::Array(vec![
-                Value::Number(NumberValue::UInt(1)),
-                Value::Number(NumberValue::UInt(2)),
-                Value::Number(NumberValue::UInt(3))
+                Value::Number(1.0),
+                Value::Number(2.0),
+                Value::Number(3.0)
             ])
         )
     }
@@ -278,21 +267,17 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Array(vec![Value::Object(
-                json_object! { "key" => Value::Null }
-            )])
+            Value::Array(vec![Value::Object(json_object! { "key" => Value::Null })])
         )
     }
 
     #[test]
-    fn object_with_int() {
+    fn object_with_number() {
         let value = parse("{\"key\": 1}");
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(
-                json_object! { "key" => Value::Number(NumberValue::UInt(1)) }
-            )
+            Value::Object(json_object! { "key" => Value::Number(1.0) })
         )
     }
 
@@ -322,7 +307,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(json_object! { "key" => Value::Bool(true) })
+            Value::Object(json_object! { "key" => Value::Boolean(true) })
         )
     }
 
@@ -332,7 +317,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(json_object! { "key" => Value::Bool(false) })
+            Value::Object(json_object! { "key" => Value::Boolean(false) })
         )
     }
 

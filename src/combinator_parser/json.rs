@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::value::{NumberValue, Value};
+use crate::value::Value;
 
 use super::{
     common::{either, left, pair, right, zero_or_more, zero_or_one},
@@ -12,14 +12,14 @@ use super::{
 ///
 /// Produces a JSON boolean true value
 fn true_value<'a>() -> impl Parser<'a, Value> {
-    match_literal("true").map(|_| Value::Bool(true))
+    match_literal("true").map(|_| Value::Boolean(true))
 }
 
 /// Parses the literal characters "false"
 ///
 /// Produces a JSON boolean false value
 fn false_value<'a>() -> impl Parser<'a, Value> {
-    match_literal("false").map(|_| Value::Bool(false))
+    match_literal("false").map(|_| Value::Boolean(false))
 }
 
 /// Parses a boolean value
@@ -40,7 +40,7 @@ fn null_value<'a>() -> impl Parser<'a, Value> {
 ///
 /// Produces a JSON string value
 fn string_value<'a>() -> impl Parser<'a, Value> {
-    quoted_string().map(|s| Value::String(s))
+    quoted_string().map(Value::String)
 }
 
 /// Parses a number value
@@ -49,8 +49,8 @@ fn string_value<'a>() -> impl Parser<'a, Value> {
 /// TODO: Add float parsing
 fn number_value<'a>() -> impl Parser<'a, Value> {
     either(
-        int().map(|i| Value::Number(NumberValue::Int(i))),
-        uint().map(|u| Value::Number(NumberValue::UInt(u))),
+        int().map(|i| Value::Number(i as f64)),
+        uint().map(|u| Value::Number(u as f64)),
     )
 }
 
@@ -201,20 +201,20 @@ pub(crate) fn json_value<'a>() -> impl Parser<'a, Value> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{json_object, value::NumberValue};
+    use crate::json_object;
 
     use super::*;
 
     #[test]
     fn true_parser() {
-        let expected = Ok(("", Value::Bool(true)));
+        let expected = Ok(("", Value::Boolean(true)));
         let actual = true_value().parse("true");
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn false_parser() {
-        let expected = Ok(("", Value::Bool(false)));
+        let expected = Ok(("", Value::Boolean(false)));
         let actual = false_value().parse("false");
         assert_eq!(expected, actual);
     }
@@ -235,8 +235,15 @@ mod tests {
 
     #[test]
     fn int_parser() {
-        let expected = Ok(("", Value::Number(NumberValue::UInt(1))));
+        let expected = Ok(("", Value::Number(1.0)));
         let actual = number_value().parse("1");
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn float_parser() {
+        let expected = Ok(("", Value::Number(1.2)));
+        let actual = number_value().parse("1.2");
         assert_eq!(expected, actual);
     }
 
@@ -263,10 +270,7 @@ mod tests {
 
     #[test]
     fn object_one_parser() {
-        let expected = Ok((
-            "",
-            Value::Object(json_object! { "key" => Value::Null }),
-        ));
+        let expected = Ok(("", Value::Object(json_object! { "key" => Value::Null })));
         let actual = object_value().parse("{\"key\":null}");
         assert_eq!(expected, actual);
     }
@@ -276,7 +280,7 @@ mod tests {
         let expected = Ok((
             "",
             Value::Object(
-                json_object! { "a".to_string() => Value::Bool(true), "b".to_string() => Value::Bool(false) },
+                json_object! { "a".to_string() => Value::Boolean(true), "b".to_string() => Value::Boolean(false) },
             ),
         ));
         let actual = object_value().parse(r#"{"a":true, "b":false}"#);
@@ -301,7 +305,11 @@ mod tests {
     fn array_many_parser() {
         let expected = Ok((
             "",
-            Value::Array(vec![Value::Null, Value::Bool(true), Value::Bool(false)]),
+            Value::Array(vec![
+                Value::Null,
+                Value::Boolean(true),
+                Value::Boolean(false),
+            ]),
         ));
         let actual = array_value().parse("[null, true, false]");
         assert_eq!(expected, actual);

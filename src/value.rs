@@ -14,22 +14,25 @@ macro_rules! json_object(
 );
 
 /// Representation of a JSON value
-///
-/// Valid JSON values include:
-/// - Number
-/// - String
-/// - Boolean
-/// - Array
-/// - Object
-/// - Null
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
-    Number(NumberValue),
-    String(String),
-    Bool(bool),
-    Array(Vec<Value>),
-    Object(BTreeMap<String, Value>),
+    /// literal characters `null`
     Null,
+
+    /// literal characters `true` or `false`
+    Boolean(bool),
+
+    /// characters within double quotes "..."
+    String(String),
+
+    /// numbers stored as a 64-bit floating point
+    Number(f64),
+
+    /// Zero to many JSON values
+    Array(Vec<Value>),
+
+    /// String keys with JSON values
+    Object(BTreeMap<String, Value>),
 }
 
 impl Value {
@@ -68,7 +71,7 @@ impl Value {
 
     pub fn as_boolean(&self) -> Option<bool> {
         match *self {
-            Value::Bool(b) => Some(b),
+            Value::Boolean(b) => Some(b),
             _ => None,
         }
     }
@@ -98,7 +101,7 @@ impl fmt::Display for Value {
         match self {
             Value::Number(n) => write!(f, "{}", n),
             Value::String(s) => write!(f, "{}", s),
-            Value::Bool(b) => write!(f, "{}", b),
+            Value::Boolean(b) => write!(f, "{}", b),
             Value::Null => f.write_str("null"),
             Value::Array(vec) => {
                 let mut output = "[".to_string();
@@ -139,73 +142,20 @@ impl fmt::Display for Value {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum NumberValue {
-    Int(i64),
-    UInt(u64),
-    Float(f64),
-}
-
-impl NumberValue {
-    pub fn as_i64(&self) -> Option<i64> {
-        match *self {
-            NumberValue::Int(i) => Some(i),
-            _ => None,
-        }
-    }
-
-    pub fn is_i64(&self) -> bool {
-        self.as_i64().is_some()
-    }
-
-    pub fn as_u64(&self) -> Option<u64> {
-        match *self {
-            NumberValue::UInt(u) => Some(u),
-            _ => None,
-        }
-    }
-
-    pub fn is_u64(&self) -> bool {
-        self.as_u64().is_some()
-    }
-
-    pub fn as_f64(&self) -> Option<f64> {
-        match *self {
-            NumberValue::Float(f) => Some(f),
-            _ => None,
-        }
-    }
-
-    pub fn is_f64(&self) -> bool {
-        self.as_f64().is_some()
-    }
-}
-
-impl fmt::Display for NumberValue {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            NumberValue::Int(n) => write!(f, "{}", n),
-            NumberValue::UInt(n) => write!(f, "{}", n),
-            NumberValue::Float(n) => write!(f, "{}", n),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn display_array() {
-        let val = Value::Array(vec![Value::Null, Value::Bool(true)]);
+        let val = Value::Array(vec![Value::Null, Value::Boolean(true)]);
         let s = format!("{}", val);
         assert_eq!("[null, true]".to_string(), s);
     }
 
     #[test]
     fn display_object() {
-        let val =
-            Value::Object(json_object! { "key" => Value::String("value".to_string()) });
+        let val = Value::Object(json_object! { "key" => Value::String("value".to_string()) });
         let s = format!("{}", val);
         assert_eq!("{\"key\": \"value\"}".to_string(), s);
     }

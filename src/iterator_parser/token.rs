@@ -5,8 +5,6 @@ use crate::location::Location;
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
     /// Literals
-    Int(i64),
-    UInt(u64),
     Float(f64),
     Null,
     Bool(bool),
@@ -35,8 +33,6 @@ impl fmt::Display for TokenKind {
             TokenKind::Comma => f.write_char(','),
             TokenKind::Colon => f.write_char(':'),
             TokenKind::String(val) => write!(f, "{:?}", val),
-            TokenKind::Int(val) => write!(f, "{:?}", val),
-            TokenKind::UInt(val) => write!(f, "{:?}", val),
             TokenKind::Float(val) => write!(f, "{:?}", val),
             TokenKind::Bool(val) => write!(f, "{:?}", val),
             TokenKind::Null => f.write_str("null"),
