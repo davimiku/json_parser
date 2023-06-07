@@ -1,10 +1,10 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use crate::value::Value;
 
 use super::{
-    common::{either, left, pair, right, zero_or_more, zero_or_one},
-    lexers::{int, match_literal, quoted_string, trim, uint},
+    common::{any, either, left, pair, right, zero_or_more, zero_or_one},
+    lexers::{float, match_literal, quoted_string, trim},
     Parser,
 };
 
@@ -46,12 +46,8 @@ fn string_value<'a>() -> impl Parser<'a, Value> {
 /// Parses a number value
 ///
 /// Produces a JSON number value
-/// TODO: Add float parsing
 fn number_value<'a>() -> impl Parser<'a, Value> {
-    either(
-        int().map(|i| Value::Number(i as f64)),
-        uint().map(|u| Value::Number(u as f64)),
-    )
+    float().map(Value::Number)
 }
 
 /// Parses a primitive value as defined by JS primitives
@@ -64,6 +60,7 @@ fn number_value<'a>() -> impl Parser<'a, Value> {
 ///
 /// Not included are objects and arrays
 fn primitive_value<'a>() -> impl Parser<'a, Value> {
+    // any(&[bool_value(), null_value(), string_value(), number_value()]);
     either(
         bool_value(),
         either(null_value(), either(string_value(), number_value())),
@@ -119,7 +116,7 @@ fn object_value<'a>() -> impl Parser<'a, Value> {
             match_literal("}"),
         )
         .map(|(v1, v2)| {
-            let mut map: BTreeMap<String, Value> = BTreeMap::new();
+            let mut map: HashMap<String, Value> = HashMap::new();
             for (key, value) in v1 {
                 map.insert(key, value);
             }
@@ -263,14 +260,14 @@ mod tests {
 
     #[test]
     fn object_empty_parser() {
-        let expected = Ok(("", Value::Object(BTreeMap::new())));
+        let expected = Ok(("", Value::Object(HashMap::new())));
         let actual = object_value().parse("{}");
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn object_one_parser() {
-        let expected = Ok(("", Value::Object(json_object! { "key" => Value::Null })));
+        let expected = Ok(("", json_object! { "key" => Value::Null }));
         let actual = object_value().parse("{\"key\":null}");
         assert_eq!(expected, actual);
     }
@@ -279,9 +276,7 @@ mod tests {
     fn object_many_parser() {
         let expected = Ok((
             "",
-            Value::Object(
-                json_object! { "a".to_string() => Value::Boolean(true), "b".to_string() => Value::Boolean(false) },
-            ),
+            json_object! { "a".to_string() => Value::Boolean(true), "b".to_string() => Value::Boolean(false) },
         ));
         let actual = object_value().parse(r#"{"a":true, "b":false}"#);
         assert_eq!(expected, actual);

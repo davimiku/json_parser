@@ -12,5 +12,6 @@
     "editor.codeActionsOnSave": {
       "source.fixAll": false
     }
-  }
+  },
+  "rust-analyzer.checkOnSave.command": "clippy"
 }

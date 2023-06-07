@@ -142,7 +142,7 @@ where
 }
 
 /// Tries the two parsers, in order, only using the second parser provided
-/// the first parser fails
+/// if the first parser fails
 pub(crate) fn either<'a, P1, P2, A>(parser1: P1, parser2: P2) -> impl Parser<'a, A>
 where
     P1: Parser<'a, A>,
@@ -151,6 +151,26 @@ where
     move |input| match parser1.parse(input) {
         ok @ Ok(_) => ok,
         Err(_) => parser2.parse(input),
+    }
+}
+
+/// Tries all of the parsers, in order, using the first parser that succeeds
+pub(crate) fn any<'a, P, A>(parsers: &[P]) -> impl Parser<'a, A> + '_
+where
+    P: Parser<'a, A>,
+{
+    move |input| {
+        let mut err: &str = "";
+
+        for parser in parsers {
+            match parser.parse(input) {
+                ok @ Ok(_) => return ok,
+                Err(e) => {
+                    err = e;
+                }
+            }
+        }
+        Err(err)
     }
 }
 

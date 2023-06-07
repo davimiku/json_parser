@@ -1,14 +1,16 @@
-use std::{collections::BTreeMap, fmt, mem};
+use std::collections::HashMap;
+use std::fmt::{self, Write};
+use std::mem;
 
 #[macro_export]
 macro_rules! json_object(
     { $($key:expr => $value:expr),+ } => {
         {
-            let mut m = BTreeMap::new();
+            let mut m = HashMap::new();
             $(
                 m.insert($key.to_string(), $value);
             )+
-            m
+            Value::Object(m)
         }
     };
 );
@@ -32,7 +34,7 @@ pub enum Value {
     Array(Vec<Value>),
 
     /// String keys with JSON values
-    Object(BTreeMap<String, Value>),
+    Object(HashMap<String, Value>),
 }
 
 impl Value {
@@ -47,7 +49,7 @@ impl Value {
         self.as_array().is_some()
     }
 
-    pub fn as_object(&self) -> Option<&BTreeMap<String, Value>> {
+    pub fn as_object(&self) -> Option<&HashMap<String, Value>> {
         match *self {
             Value::Object(ref object) => Some(object),
             _ => None,
@@ -104,38 +106,35 @@ impl fmt::Display for Value {
             Value::Boolean(b) => write!(f, "{}", b),
             Value::Null => f.write_str("null"),
             Value::Array(vec) => {
-                let mut output = "[".to_string();
+                let mut output = String::from("[");
                 let mut iter = vec.iter().peekable();
 
                 while let Some(value) = iter.next() {
-                    output.push_str(&format!("{}", value));
+                    write!(output, "{}", value)?;
                     if iter.peek().is_some() {
-                        output.push_str(", ");
+                        write!(output, ", ")?;
                     }
                 }
-                output.push(']');
+                write!(output, "]")?;
                 write!(f, "{}", output)
             }
             Value::Object(object) => {
-                let mut output = "{".to_string();
+                let mut output = String::from("{");
                 let mut iter = object.iter().peekable();
 
-                while let Some(item) = iter.next() {
-                    output.push('"');
-                    output.push_str(item.0);
-                    output.push_str("\": ");
-                    if item.1.is_string() {
-                        output.push('"');
-                        output.push_str(&format!("{}", item.1));
-                        output.push('"');
+                while let Some((key, value)) = iter.next() {
+                    write!(output, "\"{key}\": ")?;
+                    if let Value::String(s) = value {
+                        write!(output, "\"{s}\"")?;
                     } else {
-                        output.push_str(&format!("{}", item.1));
+                        write!(output, "{value}")?;
                     }
+
                     if iter.peek().is_some() {
-                        output.push_str(", ");
+                        write!(output, ", ")?;
                     }
                 }
-                output.push('}');
+                write!(output, "}}")?;
                 write!(f, "{}", output)
             }
         }
@@ -150,13 +149,16 @@ mod tests {
     fn display_array() {
         let val = Value::Array(vec![Value::Null, Value::Boolean(true)]);
         let s = format!("{}", val);
-        assert_eq!("[null, true]".to_string(), s);
+        assert_eq!("[null, true]", s);
     }
 
     #[test]
     fn display_object() {
-        let val = Value::Object(json_object! { "key" => Value::String("value".to_string()) });
+        let val = json_object! {
+            "key1" => Value::String("value".into()),
+            "key2" => Value::Number(1.23)
+        };
         let s = format!("{}", val);
-        assert_eq!("{\"key\": \"value\"}".to_string(), s);
+        assert_eq!("{\"key1\": \"value\", \"key2\": 1.23}", s);
     }
 }

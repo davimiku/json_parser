@@ -21,7 +21,50 @@ mod tests {
     use super::{combinator_parse, iterator_parse};
 
     use crate::{json_object, value::Value};
-    use std::collections::BTreeMap;
+    use std::collections::HashMap;
+
+    fn test_cases_success() -> Vec<(&'static str, Value)> {
+        vec![
+            ("null", Value::Null),
+            ("true", Value::Boolean(true)),
+            ("false", Value::Boolean(false)),
+            ("[null]", Value::Array(vec![Value::Null])),
+            (
+                "[true,false]",
+                Value::Array(vec![Value::Boolean(true), Value::Boolean(false)]),
+            ),
+            (
+                "[1.1, 2.2, 3]",
+                Value::Array(vec![
+                    Value::Number(1.1),
+                    Value::Number(2.2),
+                    Value::Number(3.0),
+                ]),
+            ),
+            (
+                "[{\"key\": null}]",
+                Value::Array(vec![json_object! { "key" => Value::Null }]),
+            ),
+            ("{\"key\": 1}", json_object! { "key" => Value::Number(1.0) }),
+            (
+                "{\"key\": \"value\"}",
+                json_object! { "key" => Value::String("value".to_string()) },
+            ),
+            ("{\"key\": null}", json_object! { "key" => Value::Null }),
+            (
+                "{\"key\": true}",
+                json_object! { "key" => Value::Boolean(true) },
+            ),
+            (
+                "{\"key\": false}",
+                json_object! { "key" => Value::Boolean(false) },
+            ),
+            (
+                "{\"key\": { \"innerkey\": null } }",
+                json_object! { "key" => json_object! { "innerkey" => Value::Null}},
+            ),
+        ]
+    }
 
     fn full_input() -> &'static str {
         r#"
@@ -44,21 +87,29 @@ mod tests {
     }
 
     fn expected_value() -> Value {
-        Value::Object(json_object!(
+        json_object!(
             "str_val" => Value::String("value".to_string()),
             "null_val" => Value::Null,
             "true_val" => Value::Boolean(true),
             "false_val" => Value::Boolean(false),
             "num_val" => Value::Number(5.0),
             "arr_val" => Value::Array(vec! [Value::String("one".to_string()), Value::Number(2.0), Value::Boolean(false)]),
-            "obj_val" => Value::Object(json_object!(
+            "obj_val" => json_object!(
                 "nested_key" => Value::String("nested_value".to_string())
-            ))
-        ))
+            )
+        )
     }
 
     #[test]
-    fn parse_with_combinators() {
+    fn test_unit_cases_combinators() {
+        for (input, expected) in test_cases_success() {
+            let actual = combinator_parse(input).unwrap();
+            assert_eq!(expected, actual)
+        }
+    }
+
+    #[test]
+    fn test_full_input_combinators() {
         let input = full_input();
 
         let expected = expected_value();
@@ -68,7 +119,15 @@ mod tests {
     }
 
     #[test]
-    fn parse_with_iterators() {
+    fn test_unit_cases_iterator() {
+        for (input, expected) in test_cases_success() {
+            let actual = iterator_parse(input).unwrap();
+            assert_eq!(expected, actual)
+        }
+    }
+
+    #[test]
+    fn test_full_input_iterator() {
         let input = full_input();
         let expected = expected_value();
         let actual = iterator_parse(input).unwrap();

@@ -28,7 +28,7 @@ use crate::value::Value;
 ///
 /// An Ok value is represented as a tuple of the remaining str
 /// to parse and the output as parsed.
-pub type ParseResult<'a, Output> = Result<(&'a str, Output), &'a str>;
+pub type ParseResult<'input, Output> = Result<(&'input str, Output), &'input str>;
 
 pub trait Parser<'a, Output> {
     fn parse(&self, input: &'a str) -> ParseResult<'a, Output>;
@@ -97,7 +97,7 @@ where
     }
 }
 
-pub fn parse<'a>(input: &str) -> Result<Value, &str> {
+pub fn parse(input: &str) -> Result<Value, &str> {
     json_value().parse(input).map(|(_, value)| value)
 }
 
@@ -105,14 +105,14 @@ pub fn parse<'a>(input: &str) -> Result<Value, &str> {
 #[cfg(test)]
 mod tests {
     use crate::json_object;
-    use std::collections::BTreeMap;
+    use std::collections::HashMap;
 
     use super::*;
 
     #[test]
     fn empty_object() {
         let input = "{}";
-        let expected = Value::Object(BTreeMap::new());
+        let expected = Value::Object(HashMap::new());
         let actual = parse(input).unwrap();
         assert_eq!(expected, actual);
     }
@@ -123,10 +123,10 @@ mod tests {
             "a": "value",
             "b": true
         }"#;
-        let expected = Value::Object(json_object! {
+        let expected = json_object! {
             "a" => Value::String("value".to_string()),
             "b" => Value::Boolean(true)
-        });
+        };
         let actual = parse(input).unwrap();
         assert_eq!(expected, actual);
     }
@@ -163,7 +163,7 @@ mod tests {
         {
             "obj": {}
         }"#;
-        let expected = Value::Object(json_object! { "obj" => Value::Object(BTreeMap::new()) });
+        let expected = json_object! { "obj" => Value::Object(HashMap::new()) };
         let actual = parse(input).unwrap();
         assert_eq!(expected, actual);
     }
@@ -178,9 +178,9 @@ mod tests {
                 false
             ]
         }"#;
-        let expected = Value::Object(json_object! { "arr" => Value::Array(vec![
+        let expected = json_object! { "arr" => Value::Array(vec![
             Value::String("one".to_string()), Value::Number(2.0), Value::Boolean(false)
-        ]) });
+        ]) };
         let actual = parse(input).unwrap();
         assert_eq!(expected, actual);
     }
@@ -197,13 +197,13 @@ mod tests {
             }
         "#;
 
-        let expected = Value::Object(json_object!(
+        let expected = json_object!(
             "str_val" => Value::String("value".to_string()),
             "null_val" => Value::Null,
             "true_val" => Value::Boolean(true),
             "false_val" => Value::Boolean(false),
             "int_val" => Value::Number(5.0)
-        ));
+        );
 
         let actual = parse(input).unwrap();
         assert_eq!(expected, actual);

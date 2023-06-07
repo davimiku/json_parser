@@ -10,7 +10,7 @@ use super::{
 /// ```
 ///
 /// Captures a String instance with that content.
-pub(crate) fn quoted_string<'a>() -> impl Parser<'a, String> {
+pub(super) fn quoted_string<'a>() -> impl Parser<'a, String> {
     right(
         match_literal("\""),
         left(
@@ -21,11 +21,21 @@ pub(crate) fn quoted_string<'a>() -> impl Parser<'a, String> {
     .map(|chars| chars.into_iter().collect())
 }
 
+pub(super) fn float<'a>() -> impl Parser<'a, f64> {
+    // 	let integer = one_of(b"123456789") - one_of(b"0123456789").repeat(0..) | sym(b'0');
+    // let frac = sym(b'.') + one_of(b"0123456789").repeat(1..);
+    // let exp = one_of(b"eE") + one_of(b"+-").opt() + one_of(b"0123456789").repeat(1..);
+    // let number = sym(b'-').opt() + integer + frac.opt() + exp.opt();
+    // number.collect().convert(str::from_utf8).convert(|s|f64::from_str(&s))
+
+    |_| todo!()
+}
+
 /// Parses a positive integer into a u64 integer
 ///
 /// TODO: Remove unwrap, return the ParseIntError instead
-pub(crate) fn uint<'a>() -> impl Parser<'a, u64> {
-    one_or_more(pred(any_char, |c| c.is_numeric())).map(|chars| {
+pub(super) fn uint<'a>() -> impl Parser<'a, u64> {
+    one_or_more(digit()).map(|chars| {
         chars
             .into_iter()
             .collect::<String>()
@@ -38,9 +48,9 @@ pub(crate) fn uint<'a>() -> impl Parser<'a, u64> {
 ///
 /// TODO: Remove the possibility of panic, instead return
 /// Err if outside the bounds of i64::MIN and i64::MAX
-pub(crate) fn int<'a>() -> impl Parser<'a, i64> {
+pub(super) fn int<'a>() -> impl Parser<'a, i64> {
     match_literal("-").and_then(|()| {
-        one_or_more(pred(any_char, |c| c.is_numeric())).map(|chars| {
+        one_or_more(digit()).map(|chars| {
             chars
                 .into_iter()
                 .collect::<String>()
@@ -51,6 +61,14 @@ pub(crate) fn int<'a>() -> impl Parser<'a, i64> {
     })
 }
 
+pub(super) fn digit<'a>() -> impl Parser<'a, char> {
+    any_char.pred(|c| c.is_ascii_digit())
+}
+
+pub(super) fn nonzero_digit<'a>() -> impl Parser<'a, char> {
+    any_char.pred(|c| c.is_ascii_digit() && *c != '0')
+}
+
 /// Parses a whitespace character
 ///
 /// ```text
@@ -58,7 +76,7 @@ pub(crate) fn int<'a>() -> impl Parser<'a, i64> {
 /// ```
 ///
 /// Captures a char with the whitespace character
-pub(crate) fn whitespace_char<'a>() -> impl Parser<'a, char> {
+pub(super) fn whitespace_char<'a>() -> impl Parser<'a, char> {
     pred(any_char, |c| c.is_whitespace())
 }
 
@@ -70,7 +88,7 @@ pub(crate) fn whitespace_char<'a>() -> impl Parser<'a, char> {
 ///
 /// Captures a Vec<char> with the whitespace characters
 #[allow(dead_code)]
-pub(crate) fn space1<'a>() -> impl Parser<'a, Vec<char>> {
+pub(super) fn space1<'a>() -> impl Parser<'a, Vec<char>> {
     one_or_more(whitespace_char())
 }
 
@@ -81,7 +99,7 @@ pub(crate) fn space1<'a>() -> impl Parser<'a, Vec<char>> {
 /// ```
 ///
 /// Captures a Vec<char> with the whitespace characters
-pub(crate) fn space0<'a>() -> impl Parser<'a, Vec<char>> {
+pub(super) fn space0<'a>() -> impl Parser<'a, Vec<char>> {
     zero_or_more(whitespace_char())
 }
 
@@ -93,7 +111,7 @@ pub(crate) fn space0<'a>() -> impl Parser<'a, Vec<char>> {
 /// ```
 ///
 /// Returns the output of the provided parser.
-pub(crate) fn trim<'a, P, R: 'a + Clone>(parser: P) -> impl Parser<'a, R>
+pub(super) fn trim<'a, P, R: 'a + Clone>(parser: P) -> impl Parser<'a, R>
 where
     P: Parser<'a, R> + 'a,
 {
@@ -107,7 +125,7 @@ where
 /// ```
 ///
 /// Captures char "a"
-pub(crate) fn any_char(input: &str) -> ParseResult<char> {
+pub(super) fn any_char(input: &str) -> ParseResult<char> {
     match input.chars().next() {
         Some(next) => Ok((&input[next.len_utf8()..], next)),
         _ => Err(input),
@@ -121,7 +139,7 @@ pub(crate) fn any_char(input: &str) -> ParseResult<char> {
 /// ```
 ///
 /// Captures unit type (i.e. nothing) if `match_literal("abc")` is used
-pub(crate) fn match_literal<'a>(expected: &'static str) -> impl Parser<'a, ()> {
+pub(super) fn match_literal<'a>(expected: &'static str) -> impl Parser<'a, ()> {
     move |input: &'a str| match input.get(0..expected.len()) {
         Some(next) if next == expected => Ok((&input[expected.len()..], ())),
         _ => Err(input),

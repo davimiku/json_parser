@@ -1,18 +1,14 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
-use crate::{location::Location, value::Value};
-mod lexer;
-mod token;
-use lexer::{LexError, LexErrorKind, LexResult, Lexer};
-use token::{Token, TokenKind};
+mod lex;
+
+use crate::value::Value;
+use lex::{lex, LexError, Token};
 
 macro_rules! check_comma {
     ($needs_comma:expr,$value:expr,$token:expr) => {
         match $needs_comma {
-            true => Err(ParseError {
-                kind: ParseErrorKind::NeedsComma,
-                location: $token.location,
-            }),
+            true => Err(ParseError::NeedsComma),
             false => {
                 $needs_comma = true;
                 Ok($value)
@@ -21,69 +17,66 @@ macro_rules! check_comma {
     };
 }
 
-macro_rules! make_error {
-    ($kind:expr,$token:expr) => {
-        Err(ParseError {
-            kind: $kind,
-            location: $token.location,
-        })
-    };
+struct Parser {
+    /// Tokens produced
+    tokens: Vec<Token>,
+
+    curr_idx: usize,
 }
 
-struct Parser<I: Iterator<Item = LexResult>> {
-    /// Iterator that returns LexResult
-    lexer: I,
-}
-
-impl<I: Iterator<Item = LexResult>> Parser<I> {
-    pub fn new(lexer: I) -> Self {
-        Parser { lexer }
+impl Parser {
+    pub fn new(tokens: Vec<Token>) -> Self {
+        Parser {
+            tokens,
+            curr_idx: 0,
+        }
     }
 
     pub fn parse(&mut self) -> ParseResult {
-        let token = self.advance()?;
-        match token.kind {
-            TokenKind::Null => Ok(Value::Null),
-            TokenKind::String(s) => Ok(Value::String(s)),
-            TokenKind::Float(f) => Ok(Value::Number(f)),
-            TokenKind::Bool(b) => Ok(Value::Boolean(b)),
-            TokenKind::LeftBrace => self.parse_object(),
-            TokenKind::LeftBracket => self.parse_array(),
-            TokenKind::EOF => make_error!(ParseErrorKind::EarlyEOF, token),
-            _ => make_error!(ParseErrorKind::ExpectedValue, token),
+        let token = self.next_token();
+        match token {
+            Token::Null => Ok(Value::Null),
+            Token::Float(f) => Ok(Value::Number(f)),
+            Token::True => Ok(Value::Boolean(true)),
+            Token::False => Ok(Value::Boolean(false)),
+            Token::String(s) => self.parse_string(s),
+            Token::LeftBrace => self.parse_object(),
+            Token::LeftBracket => self.parse_array(),
+            _ => Err(ParseError::ExpectedValue),
         }
+    }
+
+    fn parse_string(&mut self, s: String) -> ParseResult {
+        todo!()
     }
 
     fn parse_array(&mut self) -> ParseResult {
         let mut array: Vec<Value> = Vec::new();
         let mut needs_comma = false;
         loop {
-            let token = self.advance()?;
-            let result: ParseResult = match &token.kind {
-                TokenKind::String(s) => {
+            let token = self.next_token();
+            let result: ParseResult = match &token {
+                Token::String(s) => {
                     check_comma!(needs_comma, Value::String(s.to_string()), token)
                 }
-                TokenKind::Float(f) => {
+                Token::Float(f) => {
                     check_comma!(needs_comma, Value::Number(*f), token)
                 }
-                TokenKind::Null => check_comma!(needs_comma, Value::Null, token),
-                TokenKind::Bool(b) => check_comma!(needs_comma, Value::Boolean(*b), token),
-                TokenKind::LeftBrace => self.parse_object(),
-                TokenKind::LeftBracket => self.parse_array(),
-                TokenKind::RightBracket => break,
-                TokenKind::Comma => {
+                Token::Null => check_comma!(needs_comma, Value::Null, token),
+                Token::True => check_comma!(needs_comma, Value::Boolean(true), token),
+                Token::False => check_comma!(needs_comma, Value::Boolean(false), token),
+                Token::LeftBrace => self.parse_object(),
+                Token::LeftBracket => self.parse_array(),
+                Token::RightBracket => break,
+                Token::Comma => {
                     if needs_comma {
                         needs_comma = false;
                         continue;
                     } else {
-                        Err(ParseError {
-                            kind: ParseErrorKind::TrailingComma,
-                            location: token.location,
-                        })
+                        Err(ParseError::TrailingComma)
                     }
                 }
-                TokenKind::EOF => make_error!(ParseErrorKind::UnclosedBracket, token),
-                _ => make_error!(ParseErrorKind::ExpectedValue, token),
+                _ => Err(ParseError::ExpectedValue),
             };
             match result {
                 Ok(value) => array.push(value),
@@ -94,113 +87,70 @@ impl<I: Iterator<Item = LexResult>> Parser<I> {
     }
 
     fn parse_object(&mut self) -> ParseResult {
-        let mut map: BTreeMap<String, Value> = BTreeMap::new();
+        let mut map: HashMap<String, Value> = HashMap::new();
         loop {
-            let token = self.advance()?;
-            match &token.kind {
-                TokenKind::String(key) => {
-                    let token = self.advance()?;
-                    match &token.kind {
-                        TokenKind::Colon => {
+            let token = self.next_token();
+            match &token {
+                Token::String(key) => {
+                    let token = self.next_token();
+                    match &token {
+                        Token::Colon => {
                             let value = self.parse()?;
                             map.insert(key.to_string(), value);
                         }
-                        _ => {
-                            return Err(ParseError {
-                                kind: ParseErrorKind::ExpectedColon,
-                                location: token.location,
-                            })
-                        }
+                        _ => return Err(ParseError::ExpectedColon),
                     }
-                    let next = self.advance()?;
-                    match &next.kind {
-                        TokenKind::Comma => {}
-                        TokenKind::RightBrace => break, // object parsing ended
-                        TokenKind::EOF => {
-                            return Err(ParseError {
-                                kind: ParseErrorKind::UnclosedBrace,
-                                location: token.location,
-                            })
-                        }
-                        _ => {
-                            return Err(ParseError {
-                                kind: ParseErrorKind::ExpectedComma,
-                                location: token.location,
-                            })
-                        }
+                    let next = self.next_token();
+                    match &next {
+                        Token::Comma => {}
+                        Token::RightBrace => break, // object parsing ended
+                        _ => return Err(ParseError::ExpectedComma),
                     }
                 }
-                TokenKind::EOF => {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::UnclosedBrace,
-                        location: token.location,
-                    })
-                }
-                _ => {
-                    return Err(ParseError {
-                        kind: ParseErrorKind::ExpectedProperty,
-                        location: token.location,
-                    })
-                }
+                _ => return Err(ParseError::ExpectedProperty),
             };
         }
         Ok(Value::Object(map))
     }
 
-    /// Advance the lexer and provide the next token
-    /// or a parsing error
-    fn advance(&mut self) -> Result<Token, ParseError> {
-        self.lexer
-            .next()
-            .unwrap_or(Ok(Token {
-                kind: TokenKind::EOF,
-                location: Location { row: 0, col: 0 },
-            }))
-            .map_err(|err| ParseError::from_lex_error(&err))
+    fn next_token(&mut self) -> Token {
+        self.curr_idx += 1;
+
+        self.tokens[self.curr_idx].clone()
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct ParseError {
-    kind: ParseErrorKind,
-    location: Location,
-}
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum ParseError {
+    LexError(LexError),
 
-impl ParseError {
-    fn from_lex_error(lex_err: &LexError) -> Self {
-        ParseError {
-            kind: ParseErrorKind::LexError(lex_err.kind),
-            location: lex_err.location,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub(crate) enum ParseErrorKind {
-    LexError(LexErrorKind),
-
-    // EOF too soon
     EarlyEOF,
     UnclosedBracket,
     UnclosedBrace,
 
-    // Expected
     ExpectedColon,
     ExpectedComma,
-    ExpectedValue, // Expected JSON object, array, or literal
+    ExpectedValue,
     ExpectedProperty,
 
-    // Missing Characters
     NeedsComma,
-
-    // Unexpected Characters
     TrailingComma,
+}
+
+impl From<LexError> for ParseError {
+    fn from(err: LexError) -> Self {
+        ParseError::LexError(err)
+    }
 }
 
 pub type ParseResult = Result<Value, ParseError>;
 
-pub fn parse(input: &str) -> ParseResult {
-    let mut parser = Parser::new(Lexer::new(input.chars()));
+pub fn parse<S>(input: S) -> ParseResult
+where
+    S: Into<String>,
+{
+    let tokens = lex(input.into());
+    let mut parser = Parser::new(tokens);
     parser.parse()
 }
 
@@ -267,7 +217,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Array(vec![Value::Object(json_object! { "key" => Value::Null })])
+            Value::Array(vec![json_object! { "key" => Value::Null }])
         )
     }
 
@@ -275,10 +225,7 @@ mod tests {
     fn object_with_number() {
         let value = parse("{\"key\": 1}");
         assert!(value.is_ok());
-        assert_eq!(
-            value.unwrap(),
-            Value::Object(json_object! { "key" => Value::Number(1.0) })
-        )
+        assert_eq!(value.unwrap(), json_object! { "key" => Value::Number(1.0) })
     }
 
     #[test]
@@ -287,7 +234,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(json_object! { "key" => Value::String("value".to_string()) })
+            json_object! { "key" => Value::String("value".to_string()) }
         )
     }
 
@@ -295,10 +242,7 @@ mod tests {
     fn object_with_null() {
         let value = parse("{\"key\": null}");
         assert!(value.is_ok());
-        assert_eq!(
-            value.unwrap(),
-            Value::Object(json_object! { "key" => Value::Null })
-        )
+        assert_eq!(value.unwrap(), json_object! { "key" => Value::Null })
     }
 
     #[test]
@@ -307,7 +251,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(json_object! { "key" => Value::Boolean(true) })
+            json_object! { "key" => Value::Boolean(true) }
         )
     }
 
@@ -317,7 +261,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(json_object! { "key" => Value::Boolean(false) })
+            json_object! { "key" => Value::Boolean(false) }
         )
     }
 
@@ -327,9 +271,7 @@ mod tests {
         assert!(value.is_ok());
         assert_eq!(
             value.unwrap(),
-            Value::Object(
-                json_object! { "key" => Value::Object(json_object! { "innerkey" => Value::Null})}
-            )
+            json_object! { "key" => json_object! { "innerkey" => Value::Null}}
         )
     }
 
@@ -337,20 +279,20 @@ mod tests {
     fn err_unclosed_array() {
         let err = parse("[null");
         assert!(err.is_err());
-        assert_eq!(err.unwrap_err().kind, ParseErrorKind::UnclosedBracket)
+        assert_eq!(err.unwrap_err(), ParseError::UnclosedBracket)
     }
 
     #[test]
     fn err_unclosed_object() {
         let err = parse("{\"key\":\"value\"");
         assert!(err.is_err());
-        assert_eq!(err.unwrap_err().kind, ParseErrorKind::UnclosedBrace)
+        assert_eq!(err.unwrap_err(), ParseError::UnclosedBrace)
     }
 
     #[test]
     fn err_expected_value() {
         let err = parse("]");
         assert!(err.is_err());
-        assert_eq!(err.unwrap_err().kind, ParseErrorKind::ExpectedValue)
+        assert_eq!(err.unwrap_err(), ParseError::ExpectedValue)
     }
 }
