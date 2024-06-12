@@ -1,15 +1,5 @@
-# JSON Parser
+# JSON Parsing Tutorial Source Code
 
-This project contains a basic parser for JSON data for academic use to learn Rust and the basics of lexers/parsers.
+This project contains the full source code used in my JSON Parsing tutorial.
 
-## Items yet to implement
-
-- [x] Parsing negative integers
-- [ ] Parsing of floats
-- [ ] Process escape characters in strings
-- [ ] Robust and complete error handling
-
-## Enhancements / "nice to have"
-
-- [ ] Allow trailing commas as an opt-in feature
-- [ ] Allow `//` style comments (jsonc)
+TODO - add a quick tour of the repo

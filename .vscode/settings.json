@@ -1,17 +1,10 @@
 {
-  "editor.codeActionsOnSave": {
-    "source.fixAll": true
-  },
-  "editor.formatOnPaste": true,
-  "editor.formatOnSave": true,
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
   },
   "[json]": {
-    "editor.formatOnSave": false,
-    "editor.codeActionsOnSave": {
-      "source.fixAll": false
-    }
+    "editor.formatOnSave": false
   },
-  "rust-analyzer.checkOnSave.command": "clippy"
+  "rust-analyzer.check.command": "clippy",
+  "editor.formatOnSave": true
 }
