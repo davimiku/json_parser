@@ -37,9 +37,9 @@ fn unescape_string(input: &str) -> Result<String, TokenParseError> {
 
     let mut is_escaping = false;
     let mut chars = input.chars();
-    while let Some(ch) = chars.next() {
+    while let Some(next_char) = chars.next() {
         if is_escaping {
-            match ch {
+            match next_char {
                 '"' => output.push('"'),
                 '\\' => output.push('\\'),
                 // `\b` (backspace) is a valid escape in JSON, but not Rust
@@ -63,13 +63,13 @@ fn unescape_string(input: &str) -> Result<String, TokenParseError> {
                     output.push(unescaped_char);
                 }
                 // any other character *may* be escaped, ex. `\q` just push that letter `q`
-                _ => output.push(ch),
+                _ => output.push(next_char),
             }
             is_escaping = false;
-        } else if ch == '\\' {
+        } else if next_char == '\\' {
             is_escaping = true;
         } else {
-            output.push(ch);
+            output.push(next_char);
         }
     }
     Ok(output)
