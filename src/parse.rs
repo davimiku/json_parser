@@ -50,16 +50,16 @@ fn unescape_string(input: &str) -> Result<String, TokenParseError> {
                 'r' => output.push('\r'),
                 't' => output.push('\t'),
                 'u' => {
-                    let mut total = 0;
+                    let mut sum = 0;
                     for i in 0..4 {
                         let next_char = chars.next().ok_or(TokenParseError::UnfinishedEscape)?;
                         let digit = next_char
                             .to_digit(16)
                             .ok_or(TokenParseError::InvalidHexValue)?;
-                        total += (16u32).pow(3 - i) * digit;
+                        sum += (16u32).pow(3 - i) * digit;
                     }
                     let unescaped_char =
-                        char::from_u32(total).ok_or(TokenParseError::InvalidHexValue)?;
+                        char::from_u32(sum).ok_or(TokenParseError::InvalidHexValue)?;
                     output.push(unescaped_char);
                 }
                 // any other character *may* be escaped, ex. `\q` just push that letter `q`
