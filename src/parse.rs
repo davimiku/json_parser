@@ -6,7 +6,7 @@ use super::tokenize::Token;
 
 pub type ParseResult = Result<Value, TokenParseError>;
 
-pub fn parse_tokens(tokens: &Vec<Token>, index: &mut usize) -> ParseResult {
+pub fn parse_tokens(tokens: &[Token], index: &mut usize) -> ParseResult {
     let token = &tokens[*index];
     if matches!(
         token,
@@ -75,7 +75,7 @@ fn unescape_string(input: &str) -> Result<String, TokenParseError> {
     Ok(output)
 }
 
-fn parse_array(tokens: &Vec<Token>, index: &mut usize) -> ParseResult {
+fn parse_array(tokens: &[Token], index: &mut usize) -> ParseResult {
     debug_assert!(tokens[*index] == Token::LeftBracket);
 
     let mut array: Vec<Value> = Vec::new();
@@ -96,12 +96,13 @@ fn parse_array(tokens: &Vec<Token>, index: &mut usize) -> ParseResult {
             _ => return Err(TokenParseError::ExpectedComma),
         }
     }
+    // consume the RightBracket token
     *index += 1;
 
     Ok(Value::Array(array))
 }
 
-fn parse_object(tokens: &Vec<Token>, index: &mut usize) -> ParseResult {
+fn parse_object(tokens: &[Token], index: &mut usize) -> ParseResult {
     debug_assert!(tokens[*index] == Token::LeftBrace);
 
     let mut map = HashMap::new();
@@ -170,135 +171,135 @@ mod tests {
     /// this is just being shown for the sake of example.
     ///
     /// In other cases, a function like this may really help with readability.
-    fn check(input: Vec<Token>, expected: Value) {
-        let actual = parse_tokens(&input, &mut 0).unwrap();
+    fn check(input: &[Token], expected: Value) {
+        let actual = parse_tokens(input, &mut 0).unwrap();
         assert_eq!(actual, expected);
     }
 
-    fn check_error(input: Vec<Token>, expected: TokenParseError) {
+    fn check_error(input: &[Token], expected: TokenParseError) {
         let actual = parse_tokens(&input, &mut 0).unwrap_err();
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn parses_null() {
-        let input = vec![Token::Null];
+        let input = [Token::Null];
         let expected = Value::Null;
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_false() {
-        let input = vec![Token::False];
+        let input = [Token::False];
         let expected = Value::Boolean(false);
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_true() {
-        let input = vec![Token::True];
+        let input = [Token::True];
         let expected = Value::Boolean(true);
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_number() {
-        let input = vec![Token::Number(12.34)];
+        let input = [Token::Number(12.34)];
         let expected = Value::Number(12.34);
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_string_no_escapes() {
-        let input = vec![Token::string("hello world")];
+        let input = [Token::string("hello world")];
         let expected = Value::String(String::from("hello world"));
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_string_non_ascii() {
-        let input = vec![Token::string("olá_こんにちは_नमस्ते_привіт")];
+        let input = [Token::string("olá_こんにちは_नमस्ते_привіт")];
         let expected = Value::String(String::from("olá_こんにちは_नमस्ते_привіт"));
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_string_with_unescaped_emoji() {
-        let input = vec![Token::string("hello 💩 world")];
+        let input = [Token::string("hello 💩 world")];
         let expected = Value::String(String::from("hello 💩 world"));
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_string_with_unnecessarily_escaped_emoji() {
-        let input = vec![Token::string(r#"hello \💩 world"#)];
+        let input = [Token::string(r#"hello \💩 world"#)];
         let expected = Value::String(String::from("hello 💩 world"));
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_string_unescape_backslash() {
-        let input = vec![Token::string(r#"hello\\world"#)];
+        let input = [Token::string(r#"hello\\world"#)];
         let expected = Value::String(String::from(r#"hello\world"#));
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_string_unescape_newline() {
-        let input = vec![Token::string(r#"hello\nworld"#)];
+        let input = [Token::string(r#"hello\nworld"#)];
         let expected = Value::String(String::from("hello\nworld"));
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     #[ignore = "decoding of UTF-16 surrogate pairs is not implemented"]
     fn parses_string_with_escaped_surrogate_pairs_for_an_emoji() {
-        let input = vec![Token::string(r#"hello\uD83C\uDF3Cworld"#)];
+        let input = [Token::string(r#"hello\uD83C\uDF3Cworld"#)];
         let expected = Value::String(String::from("hello🌼world"));
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn all_the_simple_escapes() {
-        let input = vec![Token::string(r#"\"\/\\\b\f\n\r\t"#)];
+        let input = [Token::string(r#"\"\/\\\b\f\n\r\t"#)];
         let expected = Value::String(String::from("\"/\\\u{8}\u{12}\n\r\t"));
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_empty_arrays() {
         // []
-        let input = vec![Token::LeftBracket, Token::RightBracket];
+        let input = [Token::LeftBracket, Token::RightBracket];
         let expected = Value::Array(vec![]);
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_array_one_element() {
         // [true]
-        let input = vec![Token::LeftBracket, Token::True, Token::RightBracket];
+        let input = [Token::LeftBracket, Token::True, Token::RightBracket];
         let expected = Value::Array(vec![Value::Boolean(true)]);
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_array_two_elements() {
         // [null, 16]
-        let input = vec![
+        let input = [
             Token::LeftBracket,
             Token::Null,
             Token::Comma,
@@ -307,13 +308,13 @@ mod tests {
         ];
         let expected = Value::Array(vec![Value::Null, Value::Number(16.0)]);
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_nested_array() {
         // [null, [null]]
-        let input = vec![
+        let input = [
             Token::LeftBracket,
             Token::Null,
             Token::Comma,
@@ -324,13 +325,13 @@ mod tests {
         ];
         let expected = Value::Array(vec![Value::Null, Value::Array(vec![Value::Null])]);
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn fails_array_leading_comma() {
         // [,true]
-        let input = vec![
+        let input = [
             Token::LeftBracket,
             Token::Comma,
             Token::True,
@@ -338,14 +339,14 @@ mod tests {
         ];
         let expected = TokenParseError::ExpectedValue;
 
-        check_error(input, expected);
+        check_error(&input, expected);
     }
 
     #[test]
     #[ignore = "the current implementation allows trailing commas"]
     fn fails_array_trailing_comma() {
         // [true,]
-        let input = vec![
+        let input = [
             Token::LeftBracket,
             Token::True,
             Token::Comma,
@@ -353,20 +354,20 @@ mod tests {
         ];
         let expected = TokenParseError::TrailingComma;
 
-        check_error(input, expected);
+        check_error(&input, expected);
     }
 
     #[test]
     fn parses_empty_object() {
-        let input = vec![Token::LeftBrace, Token::RightBrace];
+        let input = [Token::LeftBrace, Token::RightBrace];
         let expected = Value::object([]);
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_object_one_string_value() {
-        let input = vec![
+        let input = [
             Token::LeftBrace,
             Token::string("name"),
             Token::Colon,
@@ -375,12 +376,12 @@ mod tests {
         ];
         let expected = Value::object([("name", Value::string("davimiku"))]);
 
-        check(input, expected);
+        check(&input, expected);
     }
 
     #[test]
     fn parses_object_escaped_key() {
-        let input = vec![
+        let input = [
             Token::LeftBrace,
             Token::string(r#"\u540D\u524D"#),
             Token::Colon,
@@ -389,6 +390,6 @@ mod tests {
         ];
         let expected = Value::object([("名前", Value::string("davimiku"))]);
 
-        check(input, expected);
+        check(&input, expected);
     }
 }
